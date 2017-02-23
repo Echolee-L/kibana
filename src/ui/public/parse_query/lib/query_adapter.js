@@ -151,7 +151,7 @@ scope.Term.prototype = {
   toJson : function (ignoreNested) {
     let jsonString = '';
     if (this.nestedPath) {
-      jsonString = '{"nested":{"path":"' + this.nestedPath + '","query":';
+      jsonString = '{"nested":{"path":"' + this.nestedPath + '","query":{"bool":{"filter":';
     }
     switch (this.operation) {
       case '=':
@@ -180,7 +180,7 @@ scope.Term.prototype = {
         break;
     }
     if (this.nestedPath) {
-      jsonString += '}}';
+      jsonString += '}}}}';
     }
     return jsonString;
   }
@@ -298,7 +298,7 @@ scope.BoolExpr.prototype = {
     let i;
 
     if (this.nestedPath) {
-      json = '{"nested":{"path":"' + this.nestedPath + '","query":';
+      json = '{"nested":{"path":"' + this.nestedPath + '","query":{"bool":{"filter":';
     }
 
     json += '{"bool":';
@@ -340,7 +340,7 @@ scope.BoolExpr.prototype = {
     }
     json += '}';
     if (this.nestedPath) {
-      json += '}}';
+      json += '}}}}';
     }
     return json;
   }
@@ -354,10 +354,11 @@ scope.Not = function (expression) {
 
 scope.Not.prototype = {
   toJson : function () {
-    let json = '{"bool":{"must_not":' + this.expression.toJson() + '}}';
+    let json = this.expression.toJson();
     if (this.nestedPath) {
-      json = '{"nested":{"path":"' + this.nestedPath + '","query":' + json + '}}';
+      json = '{"nested":{"path":"' + this.nestedPath + '","query":{"bool":{"filter":' + json + '}}}}';
     }
+    json = '{"bool":{"must_not":' + json + '}}';
     return json;
   }
 };
@@ -373,7 +374,7 @@ scope.ScopedExpr.prototype = {
 
   toJson : function () {
     if (this.nestedPath) {
-      return '{"nested":{"path":"' + this.nestedPath + '","query":' + this.expression.toJson() + '}}';
+      return '{"nested":{"path":"' + this.nestedPath + '","query":{"bool":{"filter":' + this.expression.toJson() + '}}}}';
     }
     return this.expression.toJson();
   }
