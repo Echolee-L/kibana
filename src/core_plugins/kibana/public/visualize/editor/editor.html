@@ -58,7 +58,8 @@
                 class="localSearchButton"
                 ng-disabled="queryInput.$invalid"
               >
-                <span aria-hidden="true" class="fa fa-search"></span>
+              <span ng-if="state.kibanaQuery" class="fa fa-search" aria-hidden="true"></span>
+              <span ng-if="!state.kibanaQuery" class="fa fa-search-plus" aria-hidden="true"></span>
               </button>
                 <!-- Kibana query language -->
 		    <button
