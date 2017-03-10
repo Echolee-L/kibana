@@ -4,9 +4,23 @@ import _ from 'lodash';
 
 export default function (indexPattern, defaultFormat) {
 
-  function convert(hit, val, fieldName) {
+  function convert(hit, val, fieldName, recurse) {
     let field = indexPattern.fields.byName[fieldName];
-    if (!field) return defaultFormat.convert(val, 'html');
+    if (!field) {
+      if (val.constructor === Array && recurse) {
+        let pArr = [];
+        _.forEach(val, function (item) {
+          let pStore = {};
+          _.forEach(item, function (val, fieldName) {
+            pStore[fieldName] = convert(hit, val, fieldName, true);
+          });
+          pArr.push(pStore);
+        });
+        return pArr;
+      } else {
+        return defaultFormat.convert(val, 'html');
+      }
+    }
     return field.format.getConverterFor('html')(val, field, hit);
   }
 
@@ -17,14 +31,18 @@ export default function (indexPattern, defaultFormat) {
     // but not $$_formatted
     let partials = hit.$$_partialFormatted || (hit.$$_partialFormatted = {});
     let cache = hit.$$_formatted = {};
+    let tableFormatted = {};
 
     _.forOwn(indexPattern.flattenHit(hit), function (val, fieldName) {
       // sync the formatted and partial cache
-      let formatted = partials[fieldName] == null ? convert(hit, val, fieldName) : partials[fieldName];
-      cache[fieldName] = partials[fieldName] = formatted;
+      new Promise(function (resolve, reject) {
+        let formatted = partials[fieldName] == null ? convert(hit, val, fieldName, true) : partials[fieldName];
+        cache[fieldName] = partials[fieldName] = formatted;
+      });
+      tableFormatted[fieldName] = convert(hit, val, fieldName, false);
     });
 
-    return cache;
+    return tableFormatted;
   }
 
   formatHit.formatField = function (hit, fieldName) {
@@ -38,7 +56,11 @@ export default function (indexPattern, defaultFormat) {
     }
 
     let val = fieldName === '_source' ? hit._source : indexPattern.flattenHit(hit)[fieldName];
-    return partials[fieldName] = convert(hit, val, fieldName);
+    return partials[fieldName] = convert(hit, val, fieldName, false);
+  };
+
+  formatHit.convertField = function (hit, val, fieldName) {
+    return convert(hit, val, fieldName, false);
   };
 
   return formatHit;
