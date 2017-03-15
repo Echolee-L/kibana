@@ -57,7 +57,7 @@
       <td colspan="3">
         <table>
           <tr>
-            <td field-name="field"
+            <td field-name="(fieldPrefix ? field.replace(fieldPrefix + '.', '') : field)"
               ng-click="toggleVisible(field + '_',pos)"
               width="1%"
               class="doc-viewer-field">
@@ -84,7 +84,7 @@
                           </tbody>
                         </table>
                       </td>
-                      <td ng-if="!visible(doc, field, pos)">
+                      <td ng-if="!visible(doc, field, pos)" style="width=99%; word-break: break-all; word-wrap: break-word; overflow:hidden;">
                         {{ rowSummary(subObj, field, pos) }}
                       </td>
                     </tr>
