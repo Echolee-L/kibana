@@ -18,7 +18,10 @@ export default function HistogramVisType(Private) {
         addTooltip: true,
         addLegend: true,
         legendPosition: 'right',
-        isDonut: false
+        isDonut: false,
+        showPercentage: true,
+        firstCol: '#ffffff',
+        secondCol: '#ffffff'
       },
       legendPositions: [{
         value: 'left',
