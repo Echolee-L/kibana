@@ -25,7 +25,14 @@ export default function PieChartFactory(Private) {
       this._validatePieData(charts);
 
       this._attr = _.defaults(handler._attr || {}, {
-        isDonut: handler._attr.isDonut || false
+        isDonut: handler._attr.isDonut || false,
+        showPercentage: handler._attr.showPercentage || false,
+        firstCol: 'white',
+    		secondCol: 'white',
+    		thirdCol: 'black',
+    		firstNum: '16px',
+    		secondNum: '14px',
+    		thirdNum: '12px'
       });
     }
 
@@ -104,6 +111,14 @@ export default function PieChartFactory(Private) {
       const color = self.handler.data.getPieColorFunc();
       const tooltip = self.tooltip;
       const isTooltip = self._attr.addTooltip;
+      const showPercentage = self._attr.showPercentage;
+      const pieLabel = self._attr.pieLabel;
+      const firstCol = self._attr.firstCol;
+      const secondCol = self._attr.secondCol;
+      const thirdCol = self._attr.thirdCol;
+      const firstNum = self._attr.firstNum;
+      const secondNum = self._attr.secondNum;
+      const thirdNum = self._attr.thirdNum;
 
       const partition = d3.layout.partition()
       .sort(null)
@@ -135,12 +150,12 @@ export default function PieChartFactory(Private) {
         return Math.max(0, y(d.y + d.dy));
       });
 
-      const path = svg
+      let g = svg
       .datum(slices)
       .selectAll('path')
       .data(partition.nodes)
-      .enter()
-      .append('path')
+      .enter();
+      let path = g.append('path')
       .attr('d', arc)
       .attr('class', function (d) {
         if (d.depth === 0) {
@@ -156,7 +171,44 @@ export default function PieChartFactory(Private) {
         }
         return color(d.name);
       });
-
+			if (showPercentage) {
+				g.append('text')
+        	.attr('transform', function (d) {
+						return "translate(" + arc.centroid(d) + ")";          	
+        	})
+        	.attr('font-weight',function (d) {
+        		return d.depth === 1 ? '700' : d.depth === 2 ? '600' : '560';
+        		})
+        	.attr("font-size", function (d) {
+        		return d.depth === 1 ? firstNum : d.depth === 2 ? secondNum : thirdNum;
+        		})
+        	.attr('fill', function (d) {
+        		return d.depth === 1 ? firstCol : d.depth === 2 ? secondCol : thirdCol;
+        		})
+        	.attr('dy', '.0em') // y axis offset
+        	.style('text-anchor', 'middle')
+        	.text(function (d) {
+          	if (d.hasOwnProperty('name') && d.hasOwnProperty('percentOfParent') &&
+            	d.percentOfParent >= 0.05 /* If too small, just do not show */ ) {
+            	return ((d.percentOfParent * 100).toFixed(2)) + '%';
+         		} else {
+            	return '';
+          	}
+        	});
+      }
+			if (pieLabel) { //add label
+				g.append('text')
+				 .attr('dy', '2em')
+				 .attr("transform",function (d) {
+				 	return "translate(0," + (radius * 0.98) + ")";
+				 })
+   			 .attr("font-size", "12px")
+				 .style('text-anchor', 'middle')
+				 .attr('fill','grey')
+				 .text(function () {
+						return pieLabel;
+					})
+			}
       if (isTooltip) {
         path.call(tooltip.render());
       }

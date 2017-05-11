@@ -5,5 +5,32 @@
    Donut
   </label>
 </div>
+<div>
+  <label>
+    <input type="checkbox" value="{{showPercentage}}" ng-model="vis.params.showPercentage" name="showPercentage" ng-checked="vis.params.showPercentage">
+   Show Percentage
+  </label>
+</div>
+<div>
+  <label>
+  	Label
+    <input type="text" ng-model="vis.params.pieLabel" name="pieLabel" class="form-control" />
+  </label>
+</div>
+<div>
+    <label>First Layer:</label>
+    <input type="number" ng-model="vis.params.firstNum" min="5" max="20"> px
+    <input type="color" ng-model="vis.params.firstCol" class="form-control"/>
+</div>
+<div>
+    <label>Second Layer:</label>
+    <input type="number" ng-model="vis.params.secondNum" min="5" max="20"> px
+    <input type="color" ng-model="vis.params.secondCol" class="form-control"/>
+</div>
+<div>
+    <label>Third Layer:</label>
+    <input type="number" ng-model="vis.params.thirdNum" min="5" max="20"> px
+    <input type="color" ng-model="vis.params.thirdCol" class="form-control"/>
+</div>
 <vislib-basic-options></vislib-basic-options>
 
