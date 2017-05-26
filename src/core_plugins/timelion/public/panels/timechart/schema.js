@@ -147,7 +147,13 @@ module.exports = function timechartFn(Private, config, $rootScope, timefilter, $
             }
 
             if (y != null) {
-              legendValueNumbers.eq(i).text('(' + y.toFixed(precision) + ')');
+            	var dateStr = new Date(pos.x).toString();
+            	var _date = [];
+            	var d;
+            	for (d = 3; d < 15; d++) {//24
+            		_date.push(dateStr[d]);
+            	}
+              legendValueNumbers.eq(i).text('(' + y.toFixed(precision) + '/' + _date.join('') + ')');
             } else {
               legendValueNumbers.eq(i).empty();
             }
