@@ -1,6 +1,6 @@
-<div class="panel panel-default" ng-switch on="panel.type" ng-if="savedObj || error">
+<div class="panel panel-default" ng-switch on="panel.type" ng-mouseenter="show = true" ng-mouseleave="show = false" ng-if="savedObj || error">
   <div class="panel-heading">
-    <span class="panel-title" title="{{::savedObj.title}}">
+    <span class="panel-title" ng-show="show" title="{{::savedObj.title}}">
       {{::savedObj.title}}
     </span>
     <div class="btn-group">
