@@ -33,6 +33,15 @@ module.exports = function createDateAgg(config, tlConfig) {
       var metricName = metric[0] + '(' + metric[1] + ')';
       dateAgg.time_buckets.aggs[metricName] = {};
       dateAgg.time_buckets.aggs[metricName][metric[0]] = {field: metric[1]};
+
+      if (metric[0] == 'percentiles') {
+        var percentList = metric[2].split(',');
+        percentList = percentList.map(x => parseInt(x));
+        dateAgg.time_buckets.aggs[metricName][metric[0]] = {
+          field: metric[1],
+          percents: percentList
+      	};
+      }
     } else {
       throw new Error ('`metric` requires metric:field or simply count');
     }
