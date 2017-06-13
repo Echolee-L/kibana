@@ -13,7 +13,7 @@ export default function FlattenHitProvider(config) {
 
     // recursively merge _source
     let fields = indexPattern.fields.byName;
-    (function flatten(obj, keyPrefix) {
+    (function flatten(obj, keyPrefix, prefixStore) {
       keyPrefix = keyPrefix ? keyPrefix + '.' : '';
       _.forOwn(obj, function (val, key) {
         key = keyPrefix + key;
@@ -23,12 +23,26 @@ export default function FlattenHitProvider(config) {
         let hasValidMapping = (fields[key] && fields[key].type !== 'conflict');
         let isValue = !_.isPlainObject(val);
 
+        if (hasValidMapping === undefined && val && val.constructor === Array) {
+          let pArr = [];
+          _.forEach(val, function (item) {
+            let pStore = {};
+            flatten(item, key, pStore);
+            pArr.push(pStore);
+          });
+          val = pArr;
+        }
+
         if (hasValidMapping || isValue) {
-          flat[key] = val;
+          if (prefixStore) {
+            prefixStore[key] = val;
+          } else {
+            flat[key] = val;
+          }
           return;
         }
 
-        flatten(val, key);
+        flatten(val, key, prefixStore);
       });
     }(hit._source));
 

@@ -39,4 +39,12 @@
     </p>
   </div>
 
+  <p ng-show="indexedFields.byName[agg.params.field.name].nestedPath !== undefined">
+  <br>
+  <label for="countBy">
+	  <input name="countBy" type="checkbox" ng-model="agg.params.countByParent" ng-change="aggParam.onChange(agg)">
+    Use count of parent document
+  </label>
+  </p>
+
 </div>

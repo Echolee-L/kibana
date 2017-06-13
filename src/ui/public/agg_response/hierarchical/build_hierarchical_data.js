@@ -51,7 +51,7 @@ export default function buildHierarchicalDataProvider(Private, Notifier) {
     }
 
     let firstAgg = buckets[0];
-    let aggData = resp.aggregations[firstAgg.id];
+    let aggData = resp.aggregations[firstAgg.id] || resp.aggregations['nested_' + firstAgg.id][firstAgg.id];
 
     if (!firstAgg._next && firstAgg.schema.name === 'split') {
       notify.error('Splitting charts without splitting slices is not supported. Pretending that we are just splitting slices.');
@@ -69,7 +69,7 @@ export default function buildHierarchicalDataProvider(Private, Notifier) {
     // map the split aggregations into rows.
     let rows = _.map(extractBuckets(aggData, firstAgg), function (bucket) {
       let agg = firstAgg._next;
-      let split = buildSplit(agg, metric, bucket[agg.id]);
+      let split = buildSplit(agg, metric, bucket[agg.id] || resp.aggregations['nested_' + firstAgg.id][firstAgg.id]);
       // Since splits display labels we need to set it.
       split.label = firstAgg.fieldFormatter()(agg.getKey(bucket));
 

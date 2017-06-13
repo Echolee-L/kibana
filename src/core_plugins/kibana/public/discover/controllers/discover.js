@@ -161,6 +161,7 @@ function discoverController($scope, config, courier, $route, $window, Notifier,
       columns: savedSearch.columns.length > 0 ? savedSearch.columns : config.get('defaultColumns'),
       index: $scope.indexPattern.id,
       interval: 'auto',
+      kibanaQuery: true,
       filters: _.cloneDeep($scope.searchSource.getOwn('filter'))
     };
   }

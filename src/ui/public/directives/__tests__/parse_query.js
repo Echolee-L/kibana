@@ -2,6 +2,7 @@ import angular from 'angular';
 import sinon from 'auto-release-sinon';
 import expect from 'expect.js';
 import ngMock from 'ng_mock';
+import _ from 'lodash';
 
 // Load the kibana app dependencies.
 
@@ -17,6 +18,8 @@ let $elem;
 let cycleIndex = 0;
 let markup = '<input ng-model="mockModel" parse-query input-focus type="text">';
 let fromUser;
+let tests;
+let fields;
 import toUser from 'ui/parse_query/lib/to_user';
 import 'ui/parse_query';
 import ParseQueryLibFromUserProvider from 'ui/parse_query/lib/from_user';
@@ -132,3 +135,23 @@ describe('parse-query directive', function () {
   });
 
 });
+
+describe('Jison Query Parser', function () {
+  describe('query tests', function () {
+
+    beforeEach(function () {
+      fromUser = Private(require('ui/parse_query/lib/from_user'));
+      let testString = require('./test_queries.json');
+      tests = require('./test_queries.json');
+      fields = require('./test_fields.json');
+      fromUser.setIndexPattern(fields);
+    });
+
+    it('Each query test should pass', function () {
+      _.forOwn(tests, function (test, k) {
+        expect(JSON.stringify(fromUser(test.query))).to.eql(JSON.stringify(JSON.parse(test.result)));
+      });
+    });
+  });
+});
+

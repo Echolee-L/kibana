@@ -63,8 +63,14 @@ export default function buildRangeFilter(field, params, indexPattern, formattedV
     filter.script.script.params.value = value;
     filter.meta.field = field.name;
   } else {
-    filter.range = {};
-    filter.range[field.name] = params;
+    // check for nested
+    if (indexPattern.fields.byName[field.name].nestedPath) {
+      filter.query = { nested : { path : indexPattern.fields.byName[field.name].nestedPath, query : { range : {}}}};
+      filter.query.nested.query.range[field.name] = params;
+    } else {
+      filter.range = {};
+      filter.range[field.name] = params;
+    }
   }
 
   return filter;

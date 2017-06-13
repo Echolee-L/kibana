@@ -349,24 +349,50 @@ export default function SourceAbstractFactory(Private, Promise, PromiseEmitter) 
               }
             });
 
-            flatState.body.query = {
-              bool: {
-                must: (
-                  [flatState.body.query].concat(
+            if (!flatState.index.nestedPath) {
+              flatState.body.query = {
+                bool: {
+                  must: (
+                    [flatState.body.query].concat(
+                      (flatState.filters || [])
+                      .filter(filterNegate(false))
+                      .map(translateToQuery)
+                      .map(cleanFilter)
+                    )
+                  ),
+                  must_not: (
                     (flatState.filters || [])
-                    .filter(filterNegate(false))
+                    .filter(filterNegate(true))
                     .map(translateToQuery)
                     .map(cleanFilter)
                   )
-                ),
-                must_not: (
-                  (flatState.filters || [])
-                  .filter(filterNegate(true))
-                  .map(translateToQuery)
-                  .map(cleanFilter)
-                )
-              }
-            };
+                }
+              };
+            } else {
+              flatState.body.query = {
+                nested: {
+                  path: flatState.index.nestedPath,
+                  query: {
+                    bool: {
+                      must: (
+                        [flatState.body.query].concat(
+                          (flatState.filters || [])
+                          .filter(filterNegate(false))
+                          .map(translateToQuery)
+                          .map(cleanFilter)
+                        )
+                      ),
+                      must_not: (
+                        (flatState.filters || [])
+                        .filter(filterNegate(true))
+                        .map(translateToQuery)
+                        .map(cleanFilter)
+                      )
+                    }
+                  }
+                }
+              };
+            }
           }
           delete flatState.filters;
         }

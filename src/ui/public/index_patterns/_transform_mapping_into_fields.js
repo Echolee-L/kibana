@@ -18,11 +18,12 @@ export default function transformMappingIntoFields(Private, kbnIndex, config) {
     let fields = {};
     const conflictTracker = new ConflictTracker();
 
-    _.each(response, function (index, indexName) {
+    _.each(response.fields, function (index, indexName) {
       if (indexName === kbnIndex) return;
       _.each(index.mappings, function (mappings) {
         _.each(mappings, function (field, name) {
           let keys = Object.keys(field.mapping);
+          let nestedKey = 'nestedPath';
           if (keys.length === 0 || (name[0] === '_') && !_.contains(config.get('metaFields'), name)) return;
 
           let mapping = mapField(field, name);
@@ -37,7 +38,10 @@ export default function transformMappingIntoFields(Private, kbnIndex, config) {
               fields[name] = { type: 'conflict' };
             }
           } else {
-            fields[name] = _.pick(mapping, 'type', 'indexed', 'analyzed', 'doc_values');
+            if (response.hierarchy[name]) {
+              mapping[nestedKey] = response.hierarchy[name];
+            }
+            fields[name] = _.pick(mapping, 'type', 'indexed', 'analyzed', 'doc_values', 'nestedPath');
           }
         });
       });

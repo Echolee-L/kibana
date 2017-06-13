@@ -62,12 +62,35 @@ export default function MapperService(Private, Promise, es, config, kbnIndex) {
       }
 
       return promise.then(function () {
-        return es.indices.getFieldMapping({
+        return es.indices.getMapping({
           index: indexList,
-          fields: '*',
+          type: '*',
           ignoreUnavailable: _.isArray(indexList),
-          allowNoIndices: false,
-          includeDefaults: true
+          allowNoIndices: false
+        }).then(function (resp) {
+          return es.indices.getFieldMapping({
+            index: indexList,
+            fields: '*',
+            ignoreUnavailable: _.isArray(indexList),
+            allowNoIndices: false,
+            includeDefaults: true
+          }).then(function (fields) {
+            let hierarchyPaths = {};
+            _.each(resp, function (index, indexName) {
+              if (indexName === kbnIndex) return;
+              _.each(index.mappings, function (mappings, typeName) {
+                var parent = mappings._parent;
+                _.each(mappings.properties, function (field, name) {
+                  // call the define mapping recursive function
+                  defineMapping(parent, hierarchyPaths, undefined, name, field, undefined);
+                });
+              });
+            });
+            return {
+              hierarchy: hierarchyPaths,
+              fields: fields
+            };
+          });
         });
       })
       .catch(handleMissingIndexPattern)
@@ -121,6 +144,36 @@ export default function MapperService(Private, Promise, es, config, kbnIndex) {
       fieldCache.clear(indexPattern);
       return Promise.resolve();
     };
+  }
+
+    /**
+	 * This function will recursively define all of the properties/mappings
+	 * contained in the index. This will build out full name paths and detect
+	 * nested paths for any child attributes.
+	 */
+  function defineMapping(parent, hierarchyPaths, parentPath, name, rawField, nestedPath) {
+    let fullName = name;
+    // build the fullName first
+    if (parentPath !== undefined) {
+      fullName = parentPath + '.' + name;
+    }
+
+    if (rawField.type !== undefined) {
+      if (rawField.type === 'nested') {
+        nestedPath = fullName;
+      }
+
+      hierarchyPaths[fullName] = nestedPath;
+    }
+
+    _.each(rawField.properties, function (field, name) {
+      defineMapping(parent, hierarchyPaths, fullName, name, field, nestedPath);
+    });
+
+    _.each(rawField.fields, function (field, name) {
+      defineMapping(parent, hierarchyPaths, fullName, name, field, nestedPath);
+    });
+
   }
 
   function handleMissingIndexPattern(err) {

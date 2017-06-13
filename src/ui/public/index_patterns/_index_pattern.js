@@ -166,6 +166,7 @@ export default function IndexPatternFactory(Private, Notifier, config, kbnIndex,
       this.flattenHit = flattenHit(this);
       this.formatHit = formatHit(this, fieldformats.getDefaultInstance('string'));
       this.formatField = this.formatHit.formatField;
+      this.convertField = this.formatHit.convertField;
     }
 
     get routes() {

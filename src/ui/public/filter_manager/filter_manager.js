@@ -69,8 +69,13 @@ export default function (Private) {
               }
             };
           } else {
-            filter = { meta: { negate: negate, index: index }, query: { match: {} } };
-            filter.query.match[fieldName] = { query: value, type: 'phrase' };
+            if (field.nestedPath !== undefined) {
+              filter = { meta: { negate: negate, index: index }, query: { nested: { path: field.nestedPath, query : { match: {} } } } };
+              filter.query.nested.query.match[fieldName] = { query: value, type: 'phrase' };
+            } else {
+              filter = { meta: { negate: negate, index: index }, query: { match: {} } };
+              filter.query.match[fieldName] = { query: value, type: 'phrase' };
+            }
           }
 
           break;
