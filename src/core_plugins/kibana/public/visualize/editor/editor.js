@@ -140,6 +140,7 @@ function VisEditor($scope, $route, timefilter, AppState, $location, kbnUrl, $tim
     linked: !!savedVis.savedSearchId,
     query: searchSource.getOwn('query') || {query_string: {query: '*'}},
     filters: searchSource.getOwn('filter') || [],
+    kibanaQuery: true,
     vis: savedVisState
   };
 

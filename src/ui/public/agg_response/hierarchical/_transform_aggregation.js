@@ -7,7 +7,7 @@ export default function transformAggregationProvider(Private) {
       let aggConfigResult = new AggConfigResult(
         agg,
         parent && parent.aggConfigResult,
-        metric.getValue(bucket),
+        metric.getValue(agg.id, bucket),
         agg.getKey(bucket)
       );
 
@@ -28,6 +28,9 @@ export default function transformAggregationProvider(Private) {
       // transform it as well. This is where the recursion happens.
       if (agg._next) {
         let nextBucket = bucket[agg._next.id];
+        if (bucket['nested_' + agg._next.id] !== undefined) {
+          nextBucket = bucket['nested_' + agg._next.id][agg._next.id];
+        }
         if (nextBucket && nextBucket.buckets) {
           branch.children = transformAggregation(agg._next, metric, nextBucket, branch);
         }

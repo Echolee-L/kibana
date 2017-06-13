@@ -93,6 +93,7 @@ export default function TermsAggDefinition(Private) {
 
           $scope.$watch('responseValueAggs', updateOrderAgg);
           $scope.$watch('agg.params.orderBy', updateOrderAgg);
+          $scope.$watch('agg.params.countByParent', updateOrderAgg);
 
           function updateOrderAgg() {
             let agg = $scope.agg;
@@ -161,6 +162,11 @@ export default function TermsAggDefinition(Private) {
           let orderAggId = orderAgg.id;
           if (orderAgg.parentId) {
             orderAgg = vis.aggs.byId[orderAgg.parentId];
+          }
+
+          // if the target aggregation is nested, refer to it by its nested location
+          if (orderAgg.nestedPath || orderAgg.reverseNested) {
+            orderAggId = 'nested_' + orderAggId + '>' + orderAggId;
           }
 
           output.subAggs = (output.subAggs || []).concat(orderAgg);

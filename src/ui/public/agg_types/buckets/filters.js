@@ -19,7 +19,7 @@ export default function FiltersAggDefinition(Private, Notifier) {
       {
         name: 'filters',
         editor: filtersTemplate,
-        default: [ {input: {}, label: ''} ],
+        default: [ {input: {}, label: '', base_query: ''} ],
         write: function (aggConfig, output) {
           let inFilters = aggConfig.params.filters;
           if (!_.size(inFilters)) return;
@@ -33,7 +33,7 @@ export default function FiltersAggDefinition(Private, Notifier) {
 
             decorateQuery(query);
 
-            let label = filter.label || _.get(query, 'query_string.query') || angular.toJson(query);
+            let label = filter.label || _.get(query, 'query_string.query') || filter.base_query || angular.toJson(query);
             filters[label] = input;
           }, {});
 

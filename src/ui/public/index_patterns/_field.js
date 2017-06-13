@@ -45,6 +45,8 @@ export default function FieldObjectProvider(Private, shortDotsFilter, $rootScope
     let searchable = !!spec.searchable || scripted;
     let aggregatable = !!spec.aggregatable || scripted;
     let visualizable = aggregatable;
+    let nestedPath;
+    let parentType;
 
     obj.fact('name');
     obj.fact('type');
@@ -59,6 +61,8 @@ export default function FieldObjectProvider(Private, shortDotsFilter, $rootScope
     obj.fact('indexed', indexed);
     obj.fact('analyzed', !!spec.analyzed);
     obj.fact('doc_values', !!spec.doc_values);
+    obj.fact('nestedPath', nestedPath);
+    obj.fact('parentType', parentType);
 
     // stats
     obj.fact('searchable', searchable);

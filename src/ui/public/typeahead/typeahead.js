@@ -38,6 +38,7 @@ typeahead.directive('kbnTypeahead', function () {
 
       $scope.items = self.history.get();
       $scope.filteredItems = [];
+      $scope.parseError = '';
 
       self.setInputModel = function (model) {
         $scope.inputModel = model;
@@ -187,8 +188,11 @@ typeahead.directive('kbnTypeahead', function () {
           self.query = query;
         }
 
-        // if the query is empty, clear the list items
+        $scope.parseError = $scope.$parent.parseError;
+
         if (!self.query.length) {
+
+          // if the query is empty, clear the list items
           $scope.filteredItems = [];
           return;
         }
@@ -206,7 +210,7 @@ typeahead.directive('kbnTypeahead', function () {
       };
 
       self.isVisible = function () {
-        return !self.hidden && ($scope.filteredItems.length > 0) && (self.focused || self.mousedOver);
+        return !self.hidden && (($scope.filteredItems.length > 0) && (self.focused || self.mousedOver) || $scope.parseError);
       };
 
       // handle updates to parent scope history

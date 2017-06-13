@@ -29,6 +29,7 @@
         type="text"
         class="form-control"
         name="filter{{$index}}">
+      <div ng-show="parseError !== undefined" class="form-group"><pre>{{parseError}}</pre></div>
     </div>
 
     <div class="form-group" ng-show="showConfig">
