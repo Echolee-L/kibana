@@ -100,6 +100,7 @@ export function SearchSourceProvider(Promise, Private, config) {
     'size',
     'source',
     'version',
+    'fields',
   ];
 
   SearchSource.prototype.index = function (indexPattern) {
@@ -172,12 +173,21 @@ export function SearchSourceProvider(Promise, Private, config) {
 
   SearchSource.prototype.onBeginSegmentedFetch = function (initFunction) {
     const self = this;
-    return Promise.try(function addRequest() {
-      const req = new SegmentedRequest(self, Promise.defer(), initFunction);
+    return new Promise((resolve, reject) => {
+      function addRequest() {
+        const defer = Promise.defer();
+        const req = new SegmentedRequest(self, defer, initFunction);
 
-      // return promises created by the completion handler so that
-      // errors will bubble properly
-      return req.getCompletePromise().then(addRequest);
+        req.setErrorHandler((request, error) => {
+          reject(error);
+          request.abort();
+        });
+
+        // Return promises created by the completion handler so that
+        // errors will bubble properly
+        return req.getCompletePromise().then(addRequest);
+      }
+      addRequest();
     });
   };
 
@@ -268,6 +278,12 @@ export function SearchSourceProvider(Promise, Private, config) {
         val = normalizeSortRequest(val, this.get('index'));
         addToBody();
         break;
+      case 'query':
+        state.query = (state.query || []).concat(val);
+        break;
+      case 'fields':
+        state[key] = _.uniq([...(state[key] || []), ...val]);
+        break;
       default:
         addToBody();
     }
@@ -279,13 +295,23 @@ export function SearchSourceProvider(Promise, Private, config) {
       state.body = state.body || {};
       // ignore if we already have a value
       if (state.body[key] == null) {
-        if (key === 'query' && _.isString(val)) {
-          val = { query_string: { query: val } };
-        }
-
         state.body[key] = val;
       }
     }
+  };
+
+  SearchSource.prototype.clone = function () {
+    const clone = new SearchSource(this.toString());
+    // when serializing the internal state with .toString() we lose the internal classes used in the index
+    // pattern, so we have to set it again to workaround this behavior
+    clone.set('index', this.get('index'));
+    clone.inherits(this.getParent());
+    return clone;
+  };
+
+  SearchSource.prototype.getSearchRequestBody = async function () {
+    const searchRequest = await this._flatten();
+    return searchRequest.body;
   };
 
   return SearchSource;

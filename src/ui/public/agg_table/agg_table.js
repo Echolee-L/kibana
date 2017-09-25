@@ -10,7 +10,7 @@ uiModules
 .get('kibana')
 .directive('kbnAggTable', function ($filter, config, Private, compileRecursiveDirective) {
   const fieldFormats = Private(RegistryFieldFormatsProvider);
-  const numberFormatter = fieldFormats.getDefaultInstance('number').getConverterFor('html');
+  const numberFormatter = fieldFormats.getDefaultInstance('number').getConverterFor('text');
 
   return {
     restrict: 'E',
@@ -32,7 +32,7 @@ uiModules
     controller: function ($scope) {
       const self = this;
 
-      self._saveAs = require('@spalger/filesaver').saveAs;
+      self._saveAs = require('@elastic/filesaver').saveAs;
       self.csv = {
         separator: config.get('csv:separator'),
         quoteValues: config.get('csv:quoteValues')
@@ -130,7 +130,7 @@ uiModules
                 return prev + curr[i].value;
               }, 0);
             }
-            const formatter = agg.fieldFormatter('html');
+            const formatter = agg.fieldFormatter('text');
 
             switch ($scope.totalFunc) {
               case 'sum':

@@ -3,18 +3,11 @@ import 'ui/typeahead/typeahead.less';
 import 'ui/typeahead/_input';
 import 'ui/typeahead/_items';
 import { uiModules } from 'ui/modules';
+import { comboBoxKeyCodes } from 'ui_framework/services';
+
 const typeahead = uiModules.get('kibana/typeahead');
 
-
 typeahead.directive('kbnTypeahead', function () {
-  const keyMap = {
-    ESC: 27,
-    UP: 38,
-    DOWN: 40,
-    TAB: 9,
-    ENTER: 13
-  };
-
   return {
     restrict: 'A',
     scope: {
@@ -29,15 +22,6 @@ typeahead.directive('kbnTypeahead', function () {
       self.hidden = true;
       self.focused = false;
       self.mousedOver = false;
-
-      // instantiate history and add items to the scope
-      self.history = new PersistedLog('typeahead:' + $scope.historyKey, {
-        maxLength: config.get('history:limit'),
-        filterDuplicates: true
-      });
-
-      $scope.items = self.history.get();
-      $scope.filteredItems = [];
 
       self.setInputModel = function (model) {
         $scope.inputModel = model;
@@ -137,21 +121,21 @@ typeahead.directive('kbnTypeahead', function () {
         }
 
         // hide on escape
-        if (_.contains([keyMap.ESC], keyCode)) {
+        if (_.contains([comboBoxKeyCodes.ESCAPE], keyCode)) {
           self.hidden = true;
           self.active = false;
         }
 
         // change selection with arrow up/down
         // on down key, attempt to load all items if none are loaded
-        if (_.contains([keyMap.DOWN], keyCode) && $scope.filteredItems.length === 0) {
+        if (_.contains([comboBoxKeyCodes.DOWN], keyCode) && $scope.filteredItems.length === 0) {
           $scope.filteredItems = $scope.items;
           $scope.$digest();
-        } else if (_.contains([keyMap.UP, keyMap.DOWN], keyCode)) {
+        } else if (_.contains([comboBoxKeyCodes.UP, comboBoxKeyCodes.DOWN], keyCode)) {
           if (self.isVisible() && $scope.filteredItems.length) {
             ev.preventDefault();
 
-            if (keyCode === keyMap.DOWN) {
+            if (keyCode === comboBoxKeyCodes.DOWN) {
               self.activateNext();
             } else {
               self.activatePrev();
@@ -160,14 +144,14 @@ typeahead.directive('kbnTypeahead', function () {
         }
 
         // persist selection on enter, when not selecting from the list
-        if (_.contains([keyMap.ENTER], keyCode)) {
+        if (_.contains([comboBoxKeyCodes.ENTER], keyCode)) {
           if (!self.active) {
             self.persistEntry();
           }
         }
 
         // select on enter or tab
-        if (_.contains([keyMap.ENTER, keyMap.TAB], keyCode)) {
+        if (_.contains([comboBoxKeyCodes.ENTER, comboBoxKeyCodes.TAB], keyCode)) {
           self.selectActive();
           self.hidden = true;
         }
@@ -201,6 +185,16 @@ typeahead.directive('kbnTypeahead', function () {
         return !self.hidden && ($scope.filteredItems.length > 0) && (self.focused || self.mousedOver);
       };
 
+      $scope.$watch('historyKey', () => {
+        self.history = new PersistedLog('typeahead:' + $scope.historyKey, {
+          maxLength: config.get('history:limit'),
+          filterDuplicates: true
+        });
+
+        $scope.items = self.history.get();
+        $scope.filteredItems = [];
+      });
+
       // handle updates to parent scope history
       $scope.$watch('items', function () {
         if (self.query) {
@@ -221,10 +215,6 @@ typeahead.directive('kbnTypeahead', function () {
     link: function ($scope, $el, attrs) {
       if (!_.has(attrs, 'onSelect')) {
         throw new Error('on-select must be defined');
-      }
-      // should be defined via setInput() method
-      if (!$scope.inputModel) {
-        throw new Error('kbn-typeahead-input must be defined');
       }
 
       $scope.$watch('typeahead.isVisible()', function (vis) {

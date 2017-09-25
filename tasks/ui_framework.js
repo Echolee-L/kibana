@@ -3,6 +3,7 @@ import postcss from 'postcss';
 import postcssConfig from '../src/optimize/postcss.config';
 import chokidar from 'chokidar';
 import debounce from 'lodash/function/debounce';
+
 const platform = require('os').platform();
 const isPlatformWindows = /^win/.test(platform);
 
@@ -15,6 +16,7 @@ module.exports = function (grunt) {
       args: [
         '-p',
         '--config=ui_framework/doc_site/webpack.config.js',
+        '--devtool', // Prevent the source map from being generated
       ],
       opts: { stdio: 'inherit' }
     };
@@ -41,6 +43,11 @@ module.exports = function (grunt) {
   grunt.registerTask('uiFramework:start', function () {
     const done = this.async();
     Promise.all([uiFrameworkWatch(), uiFrameworkServerStart()]).then(done);
+  });
+
+  grunt.registerTask('uiFramework:compileCss', function () {
+    const done = this.async();
+    uiFrameworkCompile().then(done);
   });
 
   function uiFrameworkServerStart() {
@@ -76,32 +83,54 @@ module.exports = function (grunt) {
   }
 
   function uiFrameworkCompile() {
-    sass.render({
-      file: 'ui_framework/components/index.scss'
-    }, function (error, result) {
-      if (error) {
-        grunt.log.error(error);
-      }
+    const src = 'ui_framework/src/index.scss';
+    const dest = 'ui_framework/dist/ui_framework.css';
 
-      postcss([postcssConfig])
-        .process(result.css, { from: 'ui_framework/components/index.scss', to: 'ui_framework/dist/ui_framework.css' })
-        .then(result => {
-          grunt.file.write('ui_framework/dist/ui_framework.css', result.css);
+    return new Promise(resolve => {
+      sass.render({
+        file: src,
+      }, function (error, result) {
+        if (error) {
+          grunt.log.error(error);
+        }
 
-          if (result.map) {
-            grunt.file.write('ui_framework/dist/ui_framework.css.map', result.map);
-          }
-        });
+        postcss([postcssConfig])
+          .process(result.css, { from: src, to: dest })
+          .then(result => {
+            grunt.file.write(dest, result.css);
+
+            if (result.map) {
+              grunt.file.write(`${dest}.map`, result.map);
+            }
+
+            resolve();
+          });
+      });
     });
   }
 
   function uiFrameworkWatch() {
-    const debouncedCompile = debounce(uiFrameworkCompile, 400, { leading: true });
+    const debouncedCompile = debounce(() => {
+      // Compile the SCSS in a separate process because node-sass throws a fatal error if it fails
+      // to compile.
+      grunt.util.spawn({
+        cmd: isPlatformWindows ? '.\\node_modules\\.bin\\grunt.cmd' : './node_modules/.bin/grunt',
+        args: [
+          'uiFramework:compileCss',
+        ],
+      }, (error, result) => {
+        if (error) {
+          grunt.log.error(result.stdout);
+        } else {
+          grunt.log.writeln(result);
+        }
+      });
+    }, 400, { leading: true });
 
     return new Promise(() => {
       debouncedCompile();
 
-      chokidar.watch('ui_framework/components', { ignoreInitial: true }).on('all', (event, path) => {
+      chokidar.watch('ui_framework/src', { ignoreInitial: true }).on('all', (event, path) => {
         grunt.log.writeln(event, path);
         debouncedCompile();
       });

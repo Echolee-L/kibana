@@ -10,27 +10,31 @@ export function HeaderPageProvider({ getService, getPageObjects }) {
   const defaultFindTimeout = config.get('timeouts.find');
 
   class HeaderPage {
+
     async clickSelector(selector) {
-      remote.setFindTimeout(defaultFindTimeout);
-      await remote.findByCssSelector(selector).click();
+      log.debug(`clickSelector(${selector})`);
+      await retry.try(async () => await remote.findByCssSelector(selector).click());
     }
 
     async clickDiscover() {
       log.debug('click Discover tab');
       await this.clickSelector('a[href*=\'discover\']');
-      await PageObjects.common.sleep(3000);
+      await PageObjects.common.waitForTopNavToBeVisible();
+      await this.isGlobalLoadingIndicatorHidden();
     }
 
     async clickVisualize() {
       log.debug('click Visualize tab');
       await this.clickSelector('a[href*=\'visualize\']');
-      await PageObjects.common.sleep(3000);
+      await PageObjects.common.waitForTopNavToBeVisible();
+      await this.isGlobalLoadingIndicatorHidden();
     }
 
     async clickDashboard() {
       log.debug('click Dashboard tab');
       await this.clickSelector('a[href*=\'dashboard\']');
-      await PageObjects.common.sleep(3000);
+      await PageObjects.common.waitForTopNavToBeVisible();
+      await this.isGlobalLoadingIndicatorHidden();
     }
 
     async clickSettings() {
@@ -166,7 +170,9 @@ export function HeaderPageProvider({ getService, getPageObjects }) {
     async getToastMessage(findTimeout = defaultFindTimeout) {
       const toastMessage =
         await find.displayedByCssSelector('kbn-truncated.toast-message.ng-isolate-scope', findTimeout);
-      return toastMessage.getVisibleText();
+      const messageText = await toastMessage.getVisibleText();
+      log.debug(`getToastMessage: ${messageText}`);
+      return messageText;
     }
 
     async waitForToastMessageGone() {
@@ -197,24 +203,21 @@ export function HeaderPageProvider({ getService, getPageObjects }) {
     }
 
     async isGlobalLoadingIndicatorVisible() {
-      return await testSubjects.find('globalLoadingIndicator', defaultFindTimeout / 5);
+      log.debug('isGlobalLoadingIndicatorVisible');
+      return await testSubjects.exists('globalLoadingIndicator');
     }
 
     async isGlobalLoadingIndicatorHidden() {
-      remote.setFindTimeout(defaultFindTimeout * 10);
-      return await remote.findByCssSelector('[data-test-subj="globalLoadingIndicator"].ng-hide');
+      log.debug('isGlobalLoadingIndicatorHidden');
+      return await find.byCssSelector('[data-test-subj="globalLoadingIndicator"].ng-hide', defaultFindTimeout * 10);
     }
 
     async getPrettyDuration() {
-      return await testSubjects.find('globalTimepickerRange').getVisibleText();
+      return await testSubjects.getVisibleText('globalTimepickerRange');
     }
 
     async isSharedTimefilterEnabled() {
-      const element = await remote
-      .setFindTimeout(defaultFindTimeout)
-      .findByCssSelector(`[shared-timefilter=true]`);
-
-      return !!element;
+      return await find.existsByCssSelector('[shared-timefilter=true]');
     }
   }
 

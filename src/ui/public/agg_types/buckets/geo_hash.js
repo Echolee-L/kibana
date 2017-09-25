@@ -3,6 +3,7 @@ import { AggTypesBucketsBucketAggTypeProvider } from 'ui/agg_types/buckets/_buck
 import { VisAggConfigProvider } from 'ui/vis/agg_config';
 import precisionTemplate from 'ui/agg_types/controls/precision.html';
 import { geohashColumns } from 'ui/utils/decode_geo_hash';
+import { geoContains, scaleBounds } from 'ui/utils/geo_utils';
 
 export function AggTypesBucketsGeoHashProvider(Private, config) {
   const BucketAggType = Private(AggTypesBucketsBucketAggTypeProvider);
@@ -44,6 +45,18 @@ export function AggTypesBucketsGeoHashProvider(Private, config) {
     return precision;
   }
 
+  function getMapZoom(vis) {
+    if (vis.hasUiState() && parseInt(vis.uiStateVal('mapZoom')) >= 0) {
+      return parseInt(vis.uiStateVal('mapZoom'));
+    }
+
+    return vis.params.mapZoom;
+  }
+
+  function isOutsideCollar(bounds, collar) {
+    return bounds && collar && !geoContains(collar, bounds);
+  }
+
   return new BucketAggType({
     name: 'geohash_grid',
     title: 'Geohash',
@@ -54,6 +67,11 @@ export function AggTypesBucketsGeoHashProvider(Private, config) {
       },
       {
         name: 'autoPrecision',
+        default: true,
+        write: _.noop
+      },
+      {
+        name: 'isFilteredByCollar',
         default: true,
         write: _.noop
       },
@@ -79,31 +97,62 @@ export function AggTypesBucketsGeoHashProvider(Private, config) {
         },
         write: function (aggConfig, output) {
           const vis = aggConfig.vis;
-          let currZoom;
-          if (vis.hasUiState()) {
-            currZoom = parseInt(vis.uiStateVal('mapZoom'), 10);
-          }
-          const autoPrecisionVal = zoomPrecision[currZoom >= 0 ? currZoom : parseInt(vis.params.mapZoom)];
+          const currZoom = getMapZoom(vis);
+          const autoPrecisionVal = zoomPrecision[currZoom];
           output.params.precision = aggConfig.params.autoPrecision ? autoPrecisionVal : getPrecision(aggConfig.params.precision);
         }
       }
     ],
     getRequestAggs: function (agg) {
-      if (!agg.params.useGeocentroid) {
-        return agg;
+      const aggs = [];
+
+      if (agg.params.isFilteredByCollar && agg.getField()) {
+        const vis = agg.vis;
+        const mapBounds = vis.sessionState.mapBounds;
+        const mapZoom = getMapZoom(vis);
+        if (mapBounds) {
+          const lastMapCollar = vis.sessionState.mapCollar;
+          let mapCollar;
+          if (!lastMapCollar || lastMapCollar.zoom !== mapZoom || isOutsideCollar(mapBounds, lastMapCollar)) {
+            mapCollar = scaleBounds(mapBounds);
+            mapCollar.zoom = mapZoom;
+            vis.sessionState.mapCollar = mapCollar;
+          } else {
+            mapCollar = lastMapCollar;
+          }
+          const boundingBox = {};
+          boundingBox[agg.getField().name] = {
+            top_left: mapCollar.top_left,
+            bottom_right: mapCollar.bottom_right
+          };
+          aggs.push(new AggConfig(agg.vis, {
+            type: 'filter',
+            id: 'filter_agg',
+            enabled:true,
+            params: {
+              geo_bounding_box: boundingBox
+            },
+            schema: {
+              group: 'buckets'
+            }
+          }));
+        }
       }
 
-      /**
-       * By default, add the geo_centroid aggregation
-       */
-      return [agg, new AggConfig(agg.vis, {
-        type: 'geo_centroid',
-        enabled:true,
-        params: {
-          field: agg.getField()
-        },
-        schema: 'metric'
-      })];
+      aggs.push(agg);
+
+      if (agg.params.useGeocentroid) {
+        aggs.push(new AggConfig(agg.vis, {
+          type: 'geo_centroid',
+          enabled:true,
+          params: {
+            field: agg.getField()
+          },
+          schema: 'metric'
+        }));
+      }
+
+      return aggs;
     }
   });
 }

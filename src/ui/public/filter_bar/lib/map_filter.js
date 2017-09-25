@@ -1,12 +1,14 @@
 import _ from 'lodash';
 import { FilterBarLibGenerateMappingChainProvider } from './generate_mapping_chain';
 import { FilterBarLibMapMatchAllProvider } from './map_match_all';
-import { FilterBarLibMapTermsProvider } from './map_terms';
+import { FilterBarLibMapPhraseProvider } from './map_phrase';
+import { FilterBarLibMapPhrasesProvider } from './map_phrases';
 import { FilterBarLibMapRangeProvider } from './map_range';
 import { FilterBarLibMapExistsProvider } from './map_exists';
 import { FilterBarLibMapMissingProvider } from './map_missing';
 import { FilterBarLibMapQueryStringProvider } from './map_query_string';
 import { FilterBarLibMapGeoBoundingBoxProvider } from './map_geo_bounding_box';
+import { FilterBarLibMapGeoPolygonProvider } from './map_geo_polygon';
 import { FilterBarLibMapScriptProvider } from './map_script';
 import { FilterBarLibMapDefaultProvider } from './map_default';
 
@@ -32,14 +34,16 @@ export function FilterBarLibMapFilterProvider(Promise, Private) {
   // and add it here. ProTip: These are executed in order listed
   const mappers = [
     Private(FilterBarLibMapMatchAllProvider),
-    Private(FilterBarLibMapTermsProvider),
     Private(FilterBarLibMapRangeProvider),
+    Private(FilterBarLibMapPhraseProvider),
+    Private(FilterBarLibMapPhrasesProvider),
     Private(FilterBarLibMapExistsProvider),
     Private(FilterBarLibMapMissingProvider),
     Private(FilterBarLibMapQueryStringProvider),
     Private(FilterBarLibMapGeoBoundingBoxProvider),
+    Private(FilterBarLibMapGeoPolygonProvider),
     Private(FilterBarLibMapScriptProvider),
-    Private(FilterBarLibMapDefaultProvider)
+    Private(FilterBarLibMapDefaultProvider),
   ];
 
   const noop = function () {
@@ -63,8 +67,10 @@ export function FilterBarLibMapFilterProvider(Promise, Private) {
     // Apply the mapping function
     return mapFn(filter).then(function (result) {
       filter.meta = filter.meta || {};
+      filter.meta.type = result.type;
       filter.meta.key = result.key;
       filter.meta.value = result.value;
+      filter.meta.params = result.params;
       filter.meta.disabled = !!(filter.meta.disabled);
       filter.meta.negate = !!(filter.meta.negate);
       filter.meta.alias = filter.meta.alias || null;

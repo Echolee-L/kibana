@@ -1,7 +1,7 @@
 
 import _ from 'lodash';
 import fixtures from 'fixtures/fake_hierarchical_data';
-import sinon from 'auto-release-sinon';
+import sinon from 'sinon';
 import expect from 'expect.js';
 import ngMock from 'ng_mock';
 import { VisProvider } from 'ui/vis';
@@ -14,18 +14,22 @@ let indexPattern;
 let buildHierarchicalData;
 
 describe('buildHierarchicalData', function () {
+  const sandbox = sinon.sandbox.create();
 
   beforeEach(ngMock.module('kibana'));
   beforeEach(ngMock.inject(function (Private, $injector) {
     // stub the error method before requiring vis causes Notifier#error to be bound
     Notifier = $injector.get('Notifier');
-    sinon.stub(Notifier.prototype, 'error');
+    sandbox.stub(Notifier.prototype, 'error');
 
     Vis = Private(VisProvider);
     indexPattern = Private(FixturesStubbedLogstashIndexPatternProvider);
     buildHierarchicalData = Private(BuildHierarchicalDataProvider);
   }));
 
+  afterEach(function () {
+    sandbox.restore();
+  });
 
   describe('metric only', function () {
     let vis;
@@ -227,8 +231,8 @@ describe('buildHierarchicalData', function () {
             schema: 'segment',
             params: {
               filters: [
-                { input: { query: { query_string: { query: '_type:apache' } } } },
-                { input: { query: { query_string: { query: '_type:nginx' } } } }
+                { input: { query: { query_string: { query: 'type:apache' } } } },
+                { input: { query: { query_string: { query: 'type:nginx' } } } }
               ]
             }
           }
@@ -263,8 +267,8 @@ describe('buildHierarchicalData', function () {
             schema: 'split',
             params: {
               filters: [
-                { input: { query: { query_string: { query: '_type:apache' } } } },
-                { input: { query: { query_string: { query: '_type:nginx' } } } }
+                { input: { query: { query_string: { query: 'type:apache' } } } },
+                { input: { query: { query_string: { query: 'type:nginx' } } } }
               ]
             }
           }

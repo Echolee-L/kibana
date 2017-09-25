@@ -1,1 +1,1 @@
-export { SortableProperties } from './sort';
+export * from '../src/services';

@@ -1,4 +1,5 @@
-import React, { PropTypes, Component } from 'react';
+import PropTypes from 'prop-types';
+import React, { Component } from 'react';
 import Select from 'react-select';
 
 const metricAggs = [
@@ -67,17 +68,23 @@ class AggSelectOption extends Component {
     const style = {
       paddingLeft: heading ? 0 : 10
     };
+    // We can ignore that the <div> does not have keyboard handlers even though
+    // it has mouse handlers, since react-select still takes care, that this works
+    // well with keyboard.
+    /* eslint-disable jsx-a11y/no-static-element-interactions */
     if (heading) {
       let note;
       if (pipeline) {
         note = (<span className="vis_editor__agg_select-note">(requires child aggregation)</span>);
       }
       return (
-        <div className="Select-option vis_editor__agg_select-heading"
+        <div
+          className="Select-option vis_editor__agg_select-heading"
           onMouseEnter={this.handleMouseEnter}
           onMouseDown={this.handleMouseDown}
           onMouseMove={this.handleMouseMove}
-          title={label}>
+          aria-label={label}
+        >
           <span className="Select-value-label" style={style}>
             <strong>{label}</strong>
             {note}
@@ -86,16 +93,19 @@ class AggSelectOption extends Component {
       );
     }
     return (
-      <div className={this.props.className}
+      <div
+        className={this.props.className}
         onMouseEnter={this.handleMouseEnter}
         onMouseDown={this.handleMouseDown}
         onMouseMove={this.handleMouseMove}
-        title={label}>
+        aria-label={label}
+      >
         <span className="Select-value-label" style={style}>
           { this.props.children }
         </span>
       </div>
     );
+    /* eslint-enable jsx-a11y/no-static-element-interactions */
   }
 
 }
@@ -139,11 +149,13 @@ function AggSelect(props) {
   return (
     <div className="vis_editor__row_item">
       <Select
+        aria-label="Select aggregation"
         clearable={false}
         options={options}
         value={props.value}
         optionComponent={AggSelectOption}
-        onChange={handleChange}/>
+        onChange={handleChange}
+      />
     </div>
   );
 }

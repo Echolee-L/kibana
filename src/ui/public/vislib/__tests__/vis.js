@@ -64,24 +64,17 @@ dataArray.forEach(function (data, i) {
         expect($('.chart').length).to.be(numberOfCharts);
       });
 
-    });
-
-    describe('resize Method', function () {
-      beforeEach(function () {
-        vis.render(data, persistedState);
-        vis.resize();
-        numberOfCharts = vis.handler.charts.length;
-      });
-
-      it('should throw an error', function () {
+      it('should throw an error if no data is provided', function () {
         expect(function () {
-          vis.data = undefined;
-          vis.render();
+          vis.render(null, persistedState);
         }).to.throwError();
       });
 
-      it('should resize the visualization', function () {
-        expect(vis.handler.charts.length).to.be(numberOfCharts);
+    });
+
+    describe('getLegendColors method', () => {
+      it ('should return null if no colors are defined', () => {
+        expect(vis.getLegendColors()).to.equal(null);
       });
     });
 

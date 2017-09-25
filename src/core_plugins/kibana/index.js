@@ -4,17 +4,23 @@ import Promise from 'bluebird';
 import { mkdirp as mkdirpNode } from 'mkdirp';
 
 import manageUuid from './server/lib/manage_uuid';
-import ingest from './server/routes/api/ingest';
 import search from './server/routes/api/search';
-import settings from './server/routes/api/settings';
+import { scrollSearchApi } from './server/routes/api/scroll_search';
+import { importApi } from './server/routes/api/import';
+import { exportApi } from './server/routes/api/export';
 import scripts from './server/routes/api/scripts';
+import { registerSuggestionsApi } from './server/routes/api/suggestions';
+import { registerFieldFormats } from './server/field_formats/register';
 import * as systemApi from './server/lib/system_api';
 import handleEsError from './server/lib/handle_es_error';
 import mappings from './mappings.json';
+import { getUiSettingDefaults } from './ui_setting_defaults';
+
+import { injectVars } from './inject_vars';
 
 const mkdirp = Promise.promisify(mkdirpNode);
 
-module.exports = function (kibana) {
+export default function (kibana) {
   const kbnBaseUrl = '/app/kibana';
   return new kibana.Plugin({
     id: 'kibana',
@@ -28,6 +34,12 @@ module.exports = function (kibana) {
 
     uiExports: {
       hacks: ['plugins/kibana/dev_tools/hacks/hide_empty_tools'],
+      fieldFormats: ['plugins/kibana/field_formats/register'],
+      savedObjectTypes: [
+        'plugins/kibana/visualize/saved_visualizations/saved_visualization_register',
+        'plugins/kibana/discover/saved_searches/saved_search_register',
+        'plugins/kibana/dashboard/saved_dashboard/saved_dashboard_register',
+      ],
       app: {
         id: 'kibana',
         title: 'Kibana',
@@ -36,34 +48,20 @@ module.exports = function (kibana) {
         main: 'plugins/kibana/kibana',
         uses: [
           'visTypes',
+          'visResponseHandlers',
+          'visRequestHandlers',
+          'visEditorTypes',
+          'savedObjectTypes',
           'spyModes',
           'fieldFormats',
+          'fieldFormatEditors',
           'navbarExtensions',
           'managementSections',
           'devTools',
-          'docViews'
+          'docViews',
+          'embeddableHandlers',
         ],
-        injectVars: function (server) {
-          const serverConfig = server.config();
-
-          //DEPRECATED SETTINGS
-          //if the url is set, the old settings must be used.
-          //keeping this logic for backward compatibilty.
-          const configuredUrl = server.config().get('tilemap.url');
-          const isOverridden = typeof configuredUrl === 'string' && configuredUrl !== '';
-          const tilemapConfig = serverConfig.get('tilemap');
-
-          return {
-            kbnDefaultAppId: serverConfig.get('kibana.defaultAppId'),
-            tilemapsConfig: {
-              deprecated: {
-                isOverridden: isOverridden,
-                config: tilemapConfig,
-              },
-              manifestServiceUrl: serverConfig.get('tilemap.manifestServiceUrl')
-            }
-          };
-        },
+        injectVars,
       },
 
       links: [
@@ -122,7 +120,9 @@ module.exports = function (kibana) {
       translations: [
         resolve(__dirname, './translations/en.json')
       ],
-      mappings
+
+      mappings,
+      uiSettingDefaults: getUiSettingDefaults(),
     },
 
     preInit: async function (server) {
@@ -141,13 +141,18 @@ module.exports = function (kibana) {
       // uuid
       manageUuid(server);
       // routes
-      ingest(server);
       search(server);
-      settings(server);
       scripts(server);
+      scrollSearchApi(server);
+      importApi(server);
+      exportApi(server);
+      registerSuggestionsApi(server);
+      registerFieldFormats(server);
 
       server.expose('systemApi', systemApi);
       server.expose('handleEsError', handleEsError);
+      server.expose('injectVars', injectVars);
+
     }
   });
-};
+}

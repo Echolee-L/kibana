@@ -1,4 +1,5 @@
-import React, { Component, PropTypes } from 'react';
+import PropTypes from 'prop-types';
+import React, { Component } from 'react';
 import Select from 'react-select';
 
 class IconOption extends Component {
@@ -27,19 +28,31 @@ class IconOption extends Component {
 
   render() {
     const icon = this.props.option.value;
-    const title = this.props.option.label;
+    const label = this.props.option.label;
+    // We can ignore that the <div> does not have keyboard handlers even though
+    // it has mouse handlers, since react-select still takes care, that this works
+    // well with keyboard.
+    /* eslint-disable jsx-a11y/no-static-element-interactions */
     return (
-      <div className={this.props.className}
+      <div
+        className={this.props.className}
         onMouseEnter={this.handleMouseEnter}
         onMouseDown={this.handleMouseDown}
         onMouseMove={this.handleMouseMove}
-        title={title}>
-        <span className="Select-value-label">
-          <i className={`vis_editor__icon_select-option fa ${icon}`}></i>
+      >
+        <span
+          className="Select-value-label"
+          aria-label={`${label} icon`}
+        >
+          <span
+            className={`vis_editor__icon_select-option kuiIcon ${icon}`}
+            aria-hidden="true"
+          />
           { this.props.children }
         </span>
       </div>
     );
+    /* eslint-enable jsx-a11y/no-static-element-interactions */
   }
 
 }
@@ -60,9 +73,12 @@ function IconValue(props) {
   const icon = props.value && props.value.value;
   const label = props.value && props.value.label;
   return (
-    <div className="Select-value" title={label}>
-      <span className="Select-value-label">
-        <i className={`vis_editor__icon_select-value fa ${icon}`}></i>
+    <div className="Select-value">
+      <span
+        className="Select-value-label"
+        aria-label={`${label} icon`}
+      >
+        <span className={`vis_editor__icon_select-value kuiIcon ${icon}`} />
         { props.children }
       </span>
     </div>
@@ -78,12 +94,14 @@ IconValue.propTypes = {
 function IconSelect(props) {
   return (
     <Select
+      inputProps={{ id: props.id }}
       clearable={false}
       onChange={props.onChange}
       value={props.value}
       optionComponent={IconOption}
       valueComponent={IconValue}
-      options={props.icons} />
+      options={props.icons}
+    />
   );
 }
 
@@ -109,6 +127,7 @@ IconSelect.defaultProps = {
 
 IconSelect.propTypes = {
   icons: PropTypes.array,
+  id: PropTypes.string,
   onChange: PropTypes.func,
   value: PropTypes.string.isRequired
 };

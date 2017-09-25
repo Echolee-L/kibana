@@ -8,45 +8,50 @@ import {
 
 export default () => (
   <div>
-    <KuiButton type="basic">
+    <KuiButton buttonType="basic">
       Button element
     </KuiButton>
 
-    &nbsp;
+    <br />
+    <br />
 
     <form onSubmit={e => {
       e.preventDefault();
       window.alert('Submit');
-    }}>
-      <KuiSubmitButton type="basic">
+    }}
+    >
+      <KuiSubmitButton buttonType="basic">
         Submit input element
       </KuiSubmitButton>
     </form>
 
+    <br />
 
     <form onSubmit={e => {
       e.preventDefault();
       window.alert('Submit');
-    }}>
-      <KuiSubmitButton type="basic" disabled>
+    }}
+    >
+      <KuiSubmitButton buttonType="basic" disabled>
         Submit input element, disabled
       </KuiSubmitButton>
     </form>
 
-    &nbsp;
+    <br />
 
     <KuiLinkButton
-      type="basic"
+      buttonType="basic"
       href="http://www.google.com"
       target="_blank"
     >
       Anchor element
     </KuiLinkButton>
 
-    &nbsp;
+    <br />
+    <br />
 
     <KuiLinkButton
-      type="basic"
+      buttonType="basic"
       href="http://www.google.com"
       target="_blank"
       disabled

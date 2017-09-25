@@ -17,7 +17,7 @@ export function TileMapTooltipFormatterProvider($compile, $rootScope, Private) {
     const vis = acr.aggConfig.vis;
 
     const metricAgg = acr.aggConfig;
-    let geoFormat = _.get(vis.aggs, 'byTypeName.geohash_grid[0].format');
+    let geoFormat = _.get(vis.getAggConfig(), 'byTypeName.geohash_grid[0].format');
     if (!geoFormat) geoFormat = fieldFormats.getDefaultInstance('geo_point');
 
     $tooltipScope.details = [
@@ -26,11 +26,12 @@ export function TileMapTooltipFormatterProvider($compile, $rootScope, Private) {
         value: metricAgg.fieldFormatter()(value)
       },
       {
-        label: 'Center',
-        value: geoFormat.convert({
-          lat: feature.geometry.coordinates[1],
-          lon: feature.geometry.coordinates[0]
-        })
+        label: 'Latitude',
+        value: feature.geometry.coordinates[1]
+      },
+      {
+        label: 'Longitude',
+        value: feature.geometry.coordinates[0]
       }
     ];
 

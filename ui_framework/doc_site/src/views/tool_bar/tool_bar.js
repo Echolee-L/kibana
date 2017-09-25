@@ -22,14 +22,14 @@ export const ToolBar = () => (
 
     <div className="kuiToolBarSection">
       <KuiButton
-        type="primary"
+        buttonType="primary"
         icon={<KuiButtonIcon type="create" />}
       >
         Create
       </KuiButton>
 
       <KuiButton
-        type="danger"
+        buttonType="danger"
         icon={<KuiButtonIcon type="delete" />}
       >
         Delete
@@ -44,15 +44,13 @@ export const ToolBar = () => (
 
       <KuiButtonGroup isUnited>
         <KuiButton
-          type="basic"
+          buttonType="basic"
           icon={<KuiButtonIcon type="previous" />}
-        >
-        </KuiButton>
+        />
         <KuiButton
-          type="basic"
+          buttonType="basic"
           icon={<KuiButtonIcon type="next" />}
-        >
-        </KuiButton>
+        />
       </KuiButtonGroup>
     </div>
   </KuiToolBar>

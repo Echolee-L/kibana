@@ -8,53 +8,58 @@ import {
 export default () => (
   <div>
     <KuiButton
-      type="primary"
+      buttonType="primary"
       icon={<KuiButtonIcon type="create" />}
     >
       Create
     </KuiButton>
 
     <br />
+    <br />
 
     <KuiButton
-      type="danger"
+      buttonType="danger"
       icon={<KuiButtonIcon type="delete" />}
     >
       Delete
     </KuiButton>
 
     <br />
+    <br />
 
     <KuiButton
-      type="basic"
+      buttonType="basic"
       icon={<KuiButtonIcon type="previous" />}
     >
       Previous
     </KuiButton>
 
     <br />
+    <br />
 
     <KuiButton
-      type="basic"
+      buttonType="basic"
       icon={<KuiButtonIcon type="next" />}
-      iconPosition='right'
+      iconPosition="right"
     >
       Next
     </KuiButton>
 
     <br />
+    <br />
 
     <KuiButton
-      type="basic"
+      buttonType="basic"
       icon={<KuiButtonIcon type="loading" />}
     >
       Loading
     </KuiButton>
 
     <br />
+    <br />
 
     <KuiButton
-      type="basic"
+      buttonType="basic"
       icon={<KuiButtonIcon className="fa-plane" />}
     />
   </div>

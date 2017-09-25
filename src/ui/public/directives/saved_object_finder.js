@@ -15,7 +15,6 @@ module.directive('savedObjectFinder', function ($location, $injector, kbnUrl, Pr
     restrict: 'E',
     scope: {
       type: '@',
-      title: '@?',
       // optional make-url attr, sets the userMakeUrl in our scope
       userMakeUrl: '=?makeUrl',
       // optional on-choose attr, sets the userOnChoose in our scope
@@ -26,7 +25,12 @@ module.directive('savedObjectFinder', function ($location, $injector, kbnUrl, Pr
        * @type {function} - an optional function. If supplied an `Add new X` button is shown
        * and this function is called when clicked.
        */
-      onAddNew: '='
+      onAddNew: '=',
+      /**
+       * @{type} boolean - set this to true, if you don't want the search box above the
+       * table to automatically gain focus once loaded
+       */
+      disableAutoFocus: '='
     },
     template: savedObjectFinderTemplate,
     controllerAs: 'finder',
@@ -119,6 +123,13 @@ module.directive('savedObjectFinder', function ($location, $injector, kbnUrl, Pr
         filterResults();
       });
 
+      $scope.pageFirstItem = 0;
+      $scope.pageLastItem = 0;
+      $scope.onPageChanged = (page) => {
+        $scope.pageFirstItem = page.firstItem;
+        $scope.pageLastItem = page.lastItem;
+      };
+
       //manages the state of the keyboard selector
       self.selector = {
         enabled: false,
@@ -128,16 +139,6 @@ module.directive('savedObjectFinder', function ($location, $injector, kbnUrl, Pr
       //key handler for the filter text box
       self.filterKeyDown = function ($event) {
         switch (keyMap[$event.keyCode]) {
-          case 'tab':
-            if (self.hitCount === 0) return;
-
-            self.selector.index = 0;
-            self.selector.enabled = true;
-
-            selectTopHit();
-
-            $event.preventDefault();
-            break;
           case 'enter':
             if (self.hitCount !== 1) return;
 

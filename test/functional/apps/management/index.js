@@ -1,10 +1,7 @@
 export default function ({ getService, loadTestFile }) {
-  const config = getService('config');
   const esArchiver = getService('esArchiver');
 
   describe('management', function () {
-    this.timeout(config.get('timeouts.test'));
-
     // on setup, we create an settingsPage instance
     // that we will use for all the tests
     before(async function () {
@@ -18,8 +15,7 @@ export default function ({ getService, loadTestFile }) {
       await esArchiver.unload('empty_kibana');
     });
 
-    loadTestFile(require.resolve('./_initial_state'));
-    loadTestFile(require.resolve('./_creation_form_changes'));
+    loadTestFile(require.resolve('./_create_index_pattern_wizard'));
     loadTestFile(require.resolve('./_index_pattern_create_delete'));
     loadTestFile(require.resolve('./_index_pattern_results_sort'));
     loadTestFile(require.resolve('./_index_pattern_popularity'));

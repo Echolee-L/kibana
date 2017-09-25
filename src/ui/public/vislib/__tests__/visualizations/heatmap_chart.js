@@ -63,6 +63,15 @@ describe('Vislib Heatmap Chart Test Suite', function () {
         vis.destroy();
       });
 
+      it('category axes should be rendered in reverse order', () => {
+        const renderedCategoryAxes = vis.handler.renderArray.filter(item => {
+          return item.constructor && item.constructor.name === 'Axis' && item.axisConfig.get('type') === 'category';
+        });
+        expect(vis.handler.categoryAxes.length).to.equal(renderedCategoryAxes.length);
+        expect(vis.handler.categoryAxes[0].axisConfig.get('id')).to.equal(renderedCategoryAxes[1].axisConfig.get('id'));
+        expect(vis.handler.categoryAxes[1].axisConfig.get('id')).to.equal(renderedCategoryAxes[0].axisConfig.get('id'));
+      });
+
       describe('addSquares method', function () {
         it('should append rects', function () {
           vis.handler.charts.forEach(function (chart) {
@@ -150,7 +159,7 @@ describe('Vislib Heatmap Chart Test Suite', function () {
       });
 
       it('should show correcy Y axis title', function () {
-        expect(vis.handler.valueAxes[1].axisConfig.get('title.text')).to.equal('');
+        expect(vis.handler.categoryAxes[1].axisConfig.get('title.text')).to.equal('');
       });
     });
   });

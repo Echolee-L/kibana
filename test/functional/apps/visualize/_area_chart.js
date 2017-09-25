@@ -3,6 +3,7 @@ import expect from 'expect.js';
 export default function ({ getService, getPageObjects }) {
   const log = getService('log');
   const retry = getService('retry');
+  const screenshots = getService('screenshots');
   const PageObjects = getPageObjects(['common', 'visualize', 'header', 'settings']);
 
   describe('visualize app', function describeIndexTests() {
@@ -67,7 +68,7 @@ export default function ({ getService, getPageObjects }) {
           expect(message).to.be(`Visualization Editor: Saved Visualization "${vizNamewithSpecialChars}"`);
         })
         .then(function testVisualizeWaitForToastMessageGone() {
-          return PageObjects.visualize.waitForToastMessageGone();
+          return PageObjects.header.waitForToastMessageGone();
         });
       });
 
@@ -78,18 +79,18 @@ export default function ({ getService, getPageObjects }) {
         log.debug(`Saved viz message with umlaut = ${message}`);
         expect(message).to.be(`Visualization Editor: Saved Visualization "${vizNamewithSpecialChars}"`);
 
-        await PageObjects.visualize.waitForToastMessageGone();
+        await PageObjects.header.waitForToastMessageGone();
       });
 
       it('should save and load', function () {
         return PageObjects.visualize.saveVisualization(vizName1)
         .then(function (message) {
           log.debug('Saved viz message = ' + message);
-          PageObjects.common.saveScreenshot('Visualize-area-chart-save-toast');
+          screenshots.take('Visualize-area-chart-save-toast');
           expect(message).to.be('Visualization Editor: Saved Visualization \"' + vizName1 + '\"');
         })
         .then(function testVisualizeWaitForToastMessageGone() {
-          return PageObjects.visualize.waitForToastMessageGone();
+          return PageObjects.header.waitForToastMessageGone();
         })
         .then(function loadSavedVisualization() {
           return PageObjects.visualize.loadSavedVisualization(vizName1);
@@ -134,39 +135,39 @@ export default function ({ getService, getPageObjects }) {
         .then(function (paths) {
           log.debug('expectedAreaChartData = ' + expectedAreaChartData);
           log.debug('actual chart data =     ' + paths);
-          PageObjects.common.saveScreenshot('Visualize-area-chart');
+          screenshots.take('Visualize-area-chart');
           expect(paths).to.eql(expectedAreaChartData);
         });
       });
 
       it('should show correct data', function () {
-        const expectedTableData = [ 'September 20th 2015, 00:00:00.000', '37',
-          'September 20th 2015, 03:00:00.000', '202',
-          'September 20th 2015, 06:00:00.000', '740',
-          'September 20th 2015, 09:00:00.000', '1,437',
-          'September 20th 2015, 12:00:00.000', '1,371',
-          'September 20th 2015, 15:00:00.000', '751',
-          'September 20th 2015, 18:00:00.000', '188',
-          'September 20th 2015, 21:00:00.000', '31',
-          'September 21st 2015, 00:00:00.000', '42',
-          'September 21st 2015, 03:00:00.000', '202',
-          'September 21st 2015, 06:00:00.000', '683',
-          'September 21st 2015, 09:00:00.000', '1,361',
-          'September 21st 2015, 12:00:00.000', '1,415',
-          'September 21st 2015, 15:00:00.000', '707',
-          'September 21st 2015, 18:00:00.000', '177',
-          'September 21st 2015, 21:00:00.000', '27',
-          'September 22nd 2015, 00:00:00.000', '32',
-          'September 22nd 2015, 03:00:00.000', '175',
-          'September 22nd 2015, 06:00:00.000', '707',
-          'September 22nd 2015, 09:00:00.000', '1,408',
-          'September 22nd 2015, 12:00:00.000', '1,355',
-          'September 22nd 2015, 15:00:00.000', '726',
-          'September 22nd 2015, 18:00:00.000', '201',
-          'September 22nd 2015, 21:00:00.000', '29'
+        const expectedTableData = [ '2015-09-20 00:00', '37',
+          '2015-09-20 03:00', '202',
+          '2015-09-20 06:00', '740',
+          '2015-09-20 09:00', '1,437',
+          '2015-09-20 12:00', '1,371',
+          '2015-09-20 15:00', '751',
+          '2015-09-20 18:00', '188',
+          '2015-09-20 21:00', '31',
+          '2015-09-21 00:00', '42',
+          '2015-09-21 03:00', '202',
+          '2015-09-21 06:00', '683',
+          '2015-09-21 09:00', '1,361',
+          '2015-09-21 12:00', '1,415',
+          '2015-09-21 15:00', '707',
+          '2015-09-21 18:00', '177',
+          '2015-09-21 21:00', '27',
+          '2015-09-22 00:00', '32',
+          '2015-09-22 03:00', '175',
+          '2015-09-22 06:00', '707',
+          '2015-09-22 09:00', '1,408',
+          '2015-09-22 12:00', '1,355',
+          '2015-09-22 15:00', '726',
+          '2015-09-22 18:00', '201',
+          '2015-09-22 21:00', '29'
         ];
 
-        return PageObjects.visualize.collapseChart()
+        return PageObjects.visualize.toggleSpyPanel()
         .then(function setPageSize() {
           return PageObjects.settings.setPageSize('All');
         })

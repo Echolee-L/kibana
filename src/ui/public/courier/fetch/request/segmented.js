@@ -1,8 +1,5 @@
 import _ from 'lodash';
-import { isNumber } from 'lodash';
-
 import { Notifier } from 'ui/notify/notifier';
-
 import { SearchRequestProvider } from './search';
 import { SegmentedHandleProvider } from './segmented_handle';
 
@@ -42,33 +39,34 @@ export function SegmentedRequestProvider(es, Private, Promise, timefilter, confi
     *********/
 
     start() {
-      super.start();
+      return super.start().then(() => {
+        this._complete = [];
+        this._active = null;
+        this._segments = [];
+        this._all = [];
+        this._queue = [];
 
-      this._complete = [];
-      this._active = null;
-      this._segments = [];
-      this._all = [];
-      this._queue = [];
+        this._mergedResp = {
+          took: 0,
+          hits: {
+            hits: [],
+            total: 0,
+            max_score: 0
+          }
+        };
 
-      this._mergedResp = {
-        took: 0,
-        hits: {
-          hits: [],
-          total: 0,
-          max_score: 0
-        }
-      };
-
-      // give the request consumer a chance to receive each segment and set
-      // parameters via the handle
-      if (_.isFunction(this._initFn)) this._initFn(this._handle);
-      return this._createQueue().then((queue) => {
+        // give the request consumer a chance to receive each segment and set
+        // parameters via the handle
+        if (_.isFunction(this._initFn)) this._initFn(this._handle);
+        return this._createQueue();
+      })
+      .then((queue) => {
         if (this.stopped) return;
 
         this._all = queue.slice(0);
 
         // Send the initial fetch status
-        this._reportStatus();
+        return this._reportStatus();
       });
     }
 
@@ -91,7 +89,7 @@ export function SegmentedRequestProvider(es, Private, Promise, timefilter, confi
         const indices = this._active = this._queue.splice(0, indexCount);
         params.index = _.pluck(indices, 'index');
 
-        if (isNumber(this._desiredSize)) {
+        if (_.isNumber(this._desiredSize)) {
           params.body.size = this._pickSizeForIndices(indices);
         }
 
@@ -186,11 +184,8 @@ export function SegmentedRequestProvider(es, Private, Promise, timefilter, confi
 
       return indexPattern.toDetailedIndexList(timeBounds.min, timeBounds.max, this._direction)
       .then(queue => {
-        if (!_.isArray(queue)) queue = [queue];
-
         this._queue = queue;
         this._queueCreated = true;
-
         return queue;
       });
     }
@@ -239,7 +234,7 @@ export function SegmentedRequestProvider(es, Private, Promise, timefilter, confi
         });
       }
 
-      if (isNumber(desiredSize)) {
+      if (_.isNumber(desiredSize)) {
         this._mergedResp.hits.hits = mergedHits.slice(0, desiredSize);
       }
     }
@@ -293,7 +288,7 @@ export function SegmentedRequestProvider(es, Private, Promise, timefilter, confi
       const desiredSize = this._desiredSize;
 
       const size = _.size(hits);
-      if (!isNumber(desiredSize) || size < desiredSize) {
+      if (!_.isNumber(desiredSize) || size < desiredSize) {
         this._hitWindow = {
           size: size,
           min: -Infinity,
@@ -319,7 +314,7 @@ export function SegmentedRequestProvider(es, Private, Promise, timefilter, confi
       const hitWindow = this._hitWindow;
       const desiredSize = this._desiredSize;
 
-      if (!isNumber(desiredSize)) return null;
+      if (!_.isNumber(desiredSize)) return null;
       // we don't have any hits yet, get us more info!
       if (!hitWindow) return desiredSize;
       // the order of documents isn't important, just get us more

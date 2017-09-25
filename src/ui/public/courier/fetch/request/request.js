@@ -1,18 +1,16 @@
 import _ from 'lodash';
 import moment from 'moment';
 
-import { RequestQueueProvider } from '../../_request_queue';
-import { ErrorHandlerRequestProvider } from './error_handler';
+import { requestQueue } from '../../_request_queue';
 
 export function AbstractRequestProvider(Private, Promise) {
-  const requestQueue = Private(RequestQueueProvider);
-  const requestErrorHandler = Private(ErrorHandlerRequestProvider);
 
   return class AbstractReq {
     constructor(source, defer) {
       this.source = source;
       this.defer = defer || Promise.defer();
       this.abortedDefer = Promise.defer();
+
       requestQueue.push(this);
     }
 
@@ -59,14 +57,7 @@ export function AbstractRequestProvider(Private, Promise) {
       this.started = true;
       this.moment = moment();
 
-      const source = this.source;
-      if (source.activeFetchCount) {
-        source.activeFetchCount += 1;
-      } else {
-        source.activeFetchCount = 1;
-      }
-
-      source.history = [this];
+      return this.source.requestIsStarting(this);
     }
 
     getFetchParams() {
@@ -89,8 +80,7 @@ export function AbstractRequestProvider(Private, Promise) {
     handleFailure(error) {
       this.success = false;
       this.resp = error && error.resp;
-      this.retry();
-      return requestErrorHandler(this, error);
+      return this.errorHandler(this, error);
     }
 
     isIncomplete() {
@@ -110,7 +100,7 @@ export function AbstractRequestProvider(Private, Promise) {
     _markStopped() {
       if (this.stopped) return;
       this.stopped = true;
-      this.source.activeFetchCount -= 1;
+      this.source.requestIsStopped(this);
       _.pull(requestQueue, this);
     }
 
@@ -142,6 +132,10 @@ export function AbstractRequestProvider(Private, Promise) {
 
     clone() {
       return new this.constructor(this.source, this.defer);
+    }
+
+    setErrorHandler(errorHandler) {
+      this.errorHandler = errorHandler;
     }
   };
 }

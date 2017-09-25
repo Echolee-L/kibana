@@ -7,16 +7,17 @@ import {
 export default () => (
   <div>
     <KuiButton
-      type="basic"
+      buttonType="basic"
       onClick={() => window.alert('Button clicked')}
     >
       Basic button
     </KuiButton>
 
     <br />
+    <br />
 
     <KuiButton
-      type="basic"
+      buttonType="basic"
       onClick={() => window.alert('Button clicked')}
       disabled
     >

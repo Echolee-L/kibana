@@ -1,12 +1,9 @@
 import angular from 'angular';
-import sinon from 'auto-release-sinon';
+import sinon from 'sinon';
 import expect from 'expect.js';
 import ngMock from 'ng_mock';
 import '../kbn_accessible_click';
-import {
-  ENTER_KEY,
-  SPACE_KEY,
-} from '../accessible_click_keys';
+import { keyCodes } from 'ui_framework/services';
 
 describe('kbnAccessibleClick directive', () => {
   let $compile;
@@ -92,44 +89,16 @@ describe('kbnAccessibleClick directive', () => {
 
     it(`on ENTER keyup`, () => {
       const e = angular.element.Event('keyup'); // eslint-disable-line new-cap
-      e.keyCode = ENTER_KEY;
+      e.keyCode = keyCodes.ENTER;
       element.trigger(e);
       sinon.assert.calledOnce(scope.handleClick);
     });
 
     it(`on SPACE keyup`, () => {
       const e = angular.element.Event('keyup'); // eslint-disable-line new-cap
-      e.keyCode = SPACE_KEY;
+      e.keyCode = keyCodes.SPACE;
       element.trigger(e);
       sinon.assert.calledOnce(scope.handleClick);
-    });
-  });
-
-  describe(`doesn't call ng-click when the element being interacted with is a child`, () => {
-    let scope;
-    let child;
-
-    beforeEach(function () {
-      scope = $rootScope.$new();
-      scope.handleClick = sinon.stub();
-      const html = `<div ng-click="handleClick()" kbn-accessible-click></div>`;
-      const element = $compile(html)(scope);
-      child = angular.element(`<button></button>`);
-      element.append(child);
-    });
-
-    it(`on ENTER keyup`, () => {
-      const e = angular.element.Event('keyup'); // eslint-disable-line new-cap
-      e.keyCode = ENTER_KEY;
-      child.trigger(e);
-      expect(scope.handleClick.callCount).to.be(0);
-    });
-
-    it(`on SPACE keyup`, () => {
-      const e = angular.element.Event('keyup'); // eslint-disable-line new-cap
-      e.keyCode = SPACE_KEY;
-      child.trigger(e);
-      expect(scope.handleClick.callCount).to.be(0);
     });
   });
 });

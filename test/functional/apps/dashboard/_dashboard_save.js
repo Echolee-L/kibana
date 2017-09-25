@@ -1,6 +1,7 @@
 import expect from 'expect.js';
 
-export default function ({ getPageObjects }) {
+export default function ({ getService, getPageObjects }) {
+  const retry = getService('retry');
   const PageObjects = getPageObjects(['dashboard', 'header', 'common']);
 
   describe('dashboard save', function describeIndexTests() {
@@ -14,7 +15,7 @@ export default function ({ getPageObjects }) {
       await PageObjects.dashboard.gotoDashboardLandingPage();
     });
 
-    it('warns on duplicate name for new dashboard', async function() {
+    it('warns on duplicate name for new dashboard', async function () {
       await PageObjects.dashboard.clickNewDashboard();
       await PageObjects.dashboard.saveDashboard(dashboardName);
       await PageObjects.header.clickToastOK();
@@ -30,14 +31,14 @@ export default function ({ getPageObjects }) {
       expect(isConfirmOpen).to.equal(true);
     });
 
-    it('does not save on reject confirmation', async function() {
+    it('does not save on reject confirmation', async function () {
       await PageObjects.common.clickCancelOnModal();
 
       const countOfDashboards = await PageObjects.dashboard.getDashboardCountWithName(dashboardName);
       expect(countOfDashboards).to.equal(1);
     });
 
-    it('Saves on confirm duplicate title warning', async function() {
+    it('Saves on confirm duplicate title warning', async function () {
       await PageObjects.dashboard.gotoDashboardLandingPage();
       await PageObjects.dashboard.clickNewDashboard();
       await PageObjects.dashboard.enterDashboardTitleAndClickSave(dashboardName);
@@ -55,7 +56,7 @@ export default function ({ getPageObjects }) {
     });
 
     it('Does not warn when you save an existing dashboard with the title it already has, and that title is a duplicate',
-      async function() {
+      async function () {
         await PageObjects.dashboard.clickDashboardByLinkText(dashboardName);
         await PageObjects.header.isGlobalLoadingIndicatorHidden();
         await PageObjects.dashboard.clickEdit();
@@ -67,7 +68,7 @@ export default function ({ getPageObjects }) {
       }
     );
 
-    it('Warns you when you Save as New Dashboard, and the title is a duplicate', async function() {
+    it('Warns you when you Save as New Dashboard, and the title is a duplicate', async function () {
       await PageObjects.dashboard.clickEdit();
       await PageObjects.dashboard.enterDashboardTitleAndClickSave(dashboardName, { saveAsNew: true });
 
@@ -77,19 +78,22 @@ export default function ({ getPageObjects }) {
       await PageObjects.common.clickCancelOnModal();
     });
 
-    it('Does not warn when only the prefix matches', async function() {
+    it('Does not warn when only the prefix matches', async function () {
       await PageObjects.dashboard.saveDashboard(dashboardName.split(' ')[0]);
 
       const isConfirmOpen = await PageObjects.common.isConfirmModalOpen();
       expect(isConfirmOpen).to.equal(false);
     });
 
-    it('Warns when case is different', async function() {
+    it('Warns when case is different', async function () {
       await PageObjects.dashboard.clickEdit();
       await PageObjects.dashboard.enterDashboardTitleAndClickSave(dashboardName.toUpperCase());
 
-      const isConfirmOpen = await PageObjects.common.isConfirmModalOpen();
-      expect(isConfirmOpen).to.equal(true);
+      // We expect isConfirmModalOpen to be open, hence the retry if not found.
+      await retry.try(async () => {
+        const isConfirmOpen = await PageObjects.common.isConfirmModalOpen();
+        expect(isConfirmOpen).to.equal(true);
+      });
 
       await PageObjects.common.clickCancelOnModal();
     });

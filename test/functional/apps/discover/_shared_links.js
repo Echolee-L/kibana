@@ -5,6 +5,7 @@ export default function ({ getService, getPageObjects }) {
   const log = getService('log');
   const esArchiver = getService('esArchiver');
   const kibanaServer = getService('kibanaServer');
+  const screenshots = getService('screenshots');
   const PageObjects = getPageObjects(['common', 'discover', 'header']);
 
   describe('shared links', function describeIndexTests() {
@@ -60,7 +61,7 @@ export default function ({ getService, getPageObjects }) {
         const expectedCaption = 'Share saved';
         return PageObjects.discover.clickShare()
         .then(function () {
-          PageObjects.common.saveScreenshot('Discover-share-link');
+          screenshots.take('Discover-share-link');
           return PageObjects.discover.getShareCaption();
         })
         .then(function (actualCaption) {
@@ -74,8 +75,8 @@ export default function ({ getService, getPageObjects }) {
           + '/discover?_g=(refreshInterval:(display:Off,pause:!f,value:0),time'
           + ':(from:\'2015-09-19T06:31:44.000Z\',mode:absolute,to:\'2015-09'
           + '-23T18:31:44.000Z\'))&_a=(columns:!(_source),index:\'logstash-'
-          + '*\',interval:auto,query:(query_string:(analyze_wildcard:!t,query'
-          + ':\'*\')),sort:!(\'@timestamp\',desc))';
+          + '*\',interval:auto,query:(language:lucene,query:\'\')'
+          + ',sort:!(\'@timestamp\',desc))';
         return PageObjects.discover.getSharedUrl()
         .then(function (actualUrl) {
           // strip the timestamp out of each URL
@@ -90,7 +91,7 @@ export default function ({ getService, getPageObjects }) {
           return PageObjects.header.getToastMessage();
         })
         .then(function (toastMessage) {
-          PageObjects.common.saveScreenshot('Discover-copy-to-clipboard-toast');
+          screenshots.take('Discover-copy-to-clipboard-toast');
           expect(toastMessage).to.match(expectedToastMessage);
         })
         .then(function () {
@@ -104,7 +105,7 @@ export default function ({ getService, getPageObjects }) {
         return PageObjects.discover.clickShortenUrl()
         .then(function () {
           return retry.try(function tryingForTime() {
-            PageObjects.common.saveScreenshot('Discover-shorten-url-button');
+            screenshots.take('Discover-shorten-url-button');
             return PageObjects.discover.getSharedUrl()
             .then(function (actualUrl) {
               expect(actualUrl).to.match(re);
@@ -114,7 +115,7 @@ export default function ({ getService, getPageObjects }) {
       });
 
       // NOTE: This test has to run immediately after the test above
-      it('should show toast message for copy to clipboard', function () {
+      it('should show toast message for copy to clipboard of short URL', function () {
         return PageObjects.discover.clickCopyToClipboard()
         .then(function () {
           return PageObjects.header.getToastMessage();

@@ -2,6 +2,7 @@ import expect from 'expect.js';
 
 export default function ({ getService, getPageObjects }) {
   const log = getService('log');
+  const screenshots = getService('screenshots');
   const PageObjects = getPageObjects(['common', 'visualize', 'header', 'settings']);
 
   describe('visualize app', function describeIndexTests() {
@@ -64,7 +65,7 @@ export default function ({ getService, getPageObjects }) {
           expect(message).to.be('Visualization Editor: Saved Visualization \"' + vizName1 + '\"');
         })
         .then(function testVisualizeWaitForToastMessageGone() {
-          return PageObjects.visualize.waitForToastMessageGone();
+          return PageObjects.header.waitForToastMessageGone();
         })
         .then(function () {
           return PageObjects.visualize.loadSavedVisualization(vizName1);
@@ -84,7 +85,7 @@ export default function ({ getService, getPageObjects }) {
         return PageObjects.visualize.getPieChartData()
         .then(function (pieData) {
           log.debug('pieData.length = ' + pieData.length);
-          PageObjects.common.saveScreenshot('Visualize-pie-chart');
+          screenshots.take('Visualize-pie-chart');
           expect(pieData.length).to.be(expectedPieChartSliceCount);
         });
       });
@@ -94,7 +95,7 @@ export default function ({ getService, getPageObjects }) {
           '160,000', '44', '200,000', '40', '240,000', '46', '280,000', '39', '320,000', '40', '360,000', '47'
         ];
 
-        return PageObjects.visualize.collapseChart()
+        return PageObjects.visualize.toggleSpyPanel()
         .then(function () {
           return PageObjects.settings.setPageSize('All');
         })

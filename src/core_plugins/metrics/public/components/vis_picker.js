@@ -1,4 +1,5 @@
-import React, { PropTypes } from 'react';
+import PropTypes from 'prop-types';
+import React from 'react';
 
 function VisPickerItem(props) {
   const { label, icon, type } = props;
@@ -11,14 +12,14 @@ function VisPickerItem(props) {
     labelClassName += ' selected';
   }
   return (
-    <div className={itemClassName} onClick={() => props.onClick(type)}>
+    <button role="tab" className={itemClassName} onClick={() => props.onClick(type)}>
       <div className={iconClassName}>
-        <i className={`fa ${icon}`}></i>
+        <i className={`fa ${icon}`} />
       </div>
       <div className={labelClassName}>
         { label }
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -47,13 +48,14 @@ function VisPicker(props) {
       <VisPickerItem
         key={item.type}
         onClick={handleChange}
-        selected={ item.type === model.type }
-        {...item}/>
+        selected={item.type === model.type}
+        {...item}
+      />
     );
   });
 
   return (
-    <div className="vis_editor__vis_picker-container">
+    <div className="vis_editor__vis_picker-container" role="tablist">
       { icons }
     </div>
   );

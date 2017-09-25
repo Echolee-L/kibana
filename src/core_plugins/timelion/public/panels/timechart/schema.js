@@ -4,11 +4,11 @@ import _ from 'lodash';
 import $ from 'jquery';
 import moment from 'moment-timezone';
 import observeResize from 'plugins/timelion/lib/observe_resize';
-import calculateInterval from 'plugins/timelion/lib/calculate_interval';
+import { calculateInterval } from '../../../common/lib';
 
 const SET_LEGEND_NUMBERS_DELAY = 50;
 
-module.exports = function timechartFn(Private, config, $rootScope, timefilter, $compile) {
+export default function timechartFn(Private, config, $rootScope, timefilter, $compile) {
   return function () {
     return {
       help: 'Draw a timeseries chart',
@@ -63,9 +63,22 @@ module.exports = function timechartFn(Private, config, $rootScope, timefilter, $
             position: 'nw',
             labelBoxBorderColor: 'rgb(255,255,255,0)',
             labelFormatter: function (label, series) {
-              return '<span class="ngLegendValue" ng-click="toggleSeries(' + series._id + ')">' +
-                label +
-                '<span class="ngLegendValueNumber"></span></span>';
+              const wrapperSpan = document.createElement('span');
+              const labelSpan = document.createElement('span');
+              const numberSpan = document.createElement('span');
+
+              wrapperSpan.setAttribute('class', 'ngLegendValue');
+              wrapperSpan.setAttribute('kbn-accessible-click', '');
+              wrapperSpan.setAttribute('ng-click', 'toggleSeries(' + series._id + ')');
+
+              labelSpan.setAttribute('ng-non-bindable', '');
+              labelSpan.appendChild(document.createTextNode(label));
+              numberSpan.setAttribute('class', 'ngLegendValueNumber');
+
+              wrapperSpan.appendChild(labelSpan);
+              wrapperSpan.appendChild(numberSpan);
+
+              return wrapperSpan.outerHTML;
             }
           },
           colors: ['#01A4A4', '#C66', '#D0D102', '#616161', '#00A1CB', '#32742C', '#F18D05', '#113F8C', '#61AE24', '#D70060']
@@ -97,7 +110,7 @@ module.exports = function timechartFn(Private, config, $rootScope, timefilter, $
           timefilter.time.from = moment(ranges.xaxis.from);
           timefilter.time.to = moment(ranges.xaxis.to);
           timefilter.time.mode = 'absolute';
-          $scope.search();
+          $scope.$apply();
         });
 
         $elem.on('mouseleave', function () {
@@ -211,6 +224,12 @@ module.exports = function timechartFn(Private, config, $rootScope, timefilter, $
             }));
             series._id = index;
 
+            if (series.color) {
+              const span = document.createElement('span');
+              span.style.color = series.color;
+              series.color = span.style.color;
+            }
+
             if (series._hide) {
               series.data = [];
               series.stack = false;
@@ -260,4 +279,4 @@ module.exports = function timechartFn(Private, config, $rootScope, timefilter, $
       }
     };
   };
-};
+}

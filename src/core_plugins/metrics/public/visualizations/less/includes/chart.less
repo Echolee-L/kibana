@@ -37,6 +37,13 @@
   padding: 6px 2px 0 0;
   color: @textColor;
   font-size: 12px;
+
+  button {
+    background: none;
+    border: none;
+    appearance: none;
+    padding: 0;
+  }
 }
 
 .rhythm_chart__legend-series {
@@ -51,7 +58,18 @@
   overflow: auto;
 }
 
+.rhythm_chart__legend_button {
+  text-align: left;
+  appearance: none;
+  background: none;
+  border: none;
+  display: flex;
+  width: 100%;
+  max-width: 170px;
+}
+
 .rhythm_chart__legend_item {
+  text-align: left;
   cursor: pointer;
   &.disabled {
     opacity: 0.5;
@@ -118,8 +136,18 @@
 .rhythm_chart__timeseries-container {
   position: relative;
   display: flex;
-  row-direction: column;
+  flex-direction: column;
   flex: 1 0 auto;
+}
+
+.rhythm_chart__axis-label {
+  font-size: 0.8em;
+  color: rgba(0,0,0,0.4);
+  text-align: center;
+  min-height: 1.2em;
+  &.reversed {
+    color: rgba(255,255,255,0.6);
+  }
 }
 
 .annotation {

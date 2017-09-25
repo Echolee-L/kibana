@@ -20,8 +20,8 @@
 
 import {
   accessibleClickKeys,
-  SPACE_KEY,
-} from './accessible_click_keys';
+  keyCodes,
+} from 'ui_framework/services';
 import { uiModules } from 'ui/modules';
 
 uiModules.get('kibana')
@@ -30,13 +30,8 @@ uiModules.get('kibana')
     restrict: 'A',
     controller: $element => {
       $element.on('keydown', e => {
-        // If the user is interacting with a different element, then we don't need to do anything.
-        if (e.currentTarget !== e.target) {
-          return;
-        }
-
         // Prevent a scroll from occurring if the user has hit space.
-        if (e.keyCode === SPACE_KEY) {
+        if (e.keyCode === keyCodes.SPACE) {
           e.preventDefault();
         }
       });
@@ -69,11 +64,6 @@ uiModules.get('kibana')
       }
 
       element.on('keyup', e => {
-        // If the user is interacting with a different element, then we don't need to do anything.
-        if (e.currentTarget !== e.target) {
-          return;
-        }
-
         // Support keyboard accessibility by emulating mouse click on ENTER or SPACE keypress.
         if (accessibleClickKeys[e.keyCode]) {
           // Delegate to the click handler on the element (assumed to be ng-click).

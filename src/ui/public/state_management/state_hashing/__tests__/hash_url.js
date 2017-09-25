@@ -1,6 +1,6 @@
 import expect from 'expect.js';
 import ngMock from 'ng_mock';
-import sinon from 'auto-release-sinon';
+import sinon from 'sinon';
 import { parse as parseUrl } from 'url';
 
 import { StateProvider } from 'ui/state_management/state';
@@ -67,11 +67,6 @@ describe('hashUrl', function () {
 
     it(`if query parameter matches and it's before the hash`, () => {
       const url = 'https://localhost:5601/app/kibana?testParam=(yes:!t)';
-      expect(hashUrl(states, url)).to.be(url);
-    });
-
-    it('if empty hash without query', () => {
-      const url = 'https://localhost:5601/app/kibana#';
       expect(hashUrl(states, url)).to.be(url);
     });
 

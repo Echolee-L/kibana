@@ -1,6 +1,7 @@
-import React, { Component, PropTypes } from 'react';
+import PropTypes from 'prop-types';
+import React, { Component } from 'react';
 import _ from 'lodash';
-import uuid from 'node-uuid';
+import uuid from 'uuid';
 import AggRow from './agg_row';
 import AggSelect from './agg_select';
 
@@ -8,6 +9,8 @@ import createChangeHandler from '../lib/create_change_handler';
 import createSelectHandler from '../lib/create_select_handler';
 import createTextHandler from '../lib/create_text_handler';
 import Vars from './vars';
+
+import { htmlIdGenerator } from 'ui_framework/services';
 
 class CalculationAgg extends Component {
 
@@ -29,35 +32,45 @@ class CalculationAgg extends Component {
     const handleSelectChange = createSelectHandler(handleChange);
     const handleTextChange = createTextHandler(handleChange);
 
+    const htmlId = htmlIdGenerator();
+
     return (
       <AggRow
         disableDelete={this.props.disableDelete}
         model={this.props.model}
         onAdd={this.props.onAdd}
         onDelete={this.props.onDelete}
-        siblings={this.props.siblings}>
+        siblings={this.props.siblings}
+      >
         <div className="vis_editor__row_item">
           <div>
             <div className="vis_editor__label">Aggregation</div>
             <AggSelect
               siblings={this.props.siblings}
               value={model.type}
-              onChange={handleSelectChange('type')}/>
+              onChange={handleSelectChange('type')}
+            />
             <div className="vis_editor__variables">
               <div className="vis_editor__label">Variables</div>
               <Vars
                 metrics={siblings}
                 onChange={handleChange}
                 name="variables"
-                model={model}/>
+                model={model}
+              />
             </div>
             <div className="vis_editor__row_item">
-              <div className="vis_editor__label">Script (Painless)</div>
+              <label className="vis_editor__label" htmlFor={htmlId('painless')}>
+                Painless Script - Variables are keys on the <code>params</code>
+                object, i.e. <code>params.&lt;name&gt;</code>
+              </label>
               <input
+                id={htmlId('painless')}
                 className="vis_editor__input-grows-100"
                 type="text"
                 onChange={handleTextChange('script')}
-                value={model.script}/>
+                value={model.script}
+              />
             </div>
           </div>
         </div>

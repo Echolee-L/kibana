@@ -2,20 +2,95 @@
 @import (reference) "~ui/styles/mixins";
 @import "~ui/styles/local_search.less";
 
+.fullScreenModePlaceholder {
+  text-align: center;
+  width: 100%;
+  height: 0;
+  bottom: 0;
+  position: absolute;
+}
+
+.exitFullScreenMode {
+  height: 40px;
+  left: 0px;
+  bottom: 0px;
+  position: fixed;
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  z-index: 5;
+}
+
+
+.exitFullScreenMode:hover,
+.exitFullScreenMode:focus {
+  transition: all .5s ease;
+
+  .exitFullScreenModeText {
+    visibility: visible;
+    opacity: 1;
+    transition: all .2s ease;
+    transform: translateX(-14px);
+  }
+}
+
+.exitFullScreenModeLogo {
+  display: block;
+  background-color: #005571;
+  width: 92px;
+  height: 40px;
+  background-image: url("~ui/images/kibana.svg");
+  background-position: 8px 5px;
+  background-size: 72px 30px;
+  background-repeat: no-repeat;
+  z-index: 50;
+}
+
+/**
+ * 1. Calc made to allow caret in text to peek out / animate.
+ */
+
+.exitFullScreenModeText {
+  display: block;
+  background: @globalColorBlue;
+  color: tint(@globalColorBlue, 70%);
+  line-height: 40px;
+  display: inline-block;
+  height: 40px;
+  position: absolute;
+  left: calc(100% + 14px);  // 1
+  top: 0px;
+  bottom: 0px;
+  white-space: nowrap;
+  padding: 0px 4px 0px 10px;
+  transition: all .2s ease;
+  transform: translateX(-100%);
+  z-index: -1;
+}
+
 .tab-dashboard {
   background-color: @dashboard-bg;
+}
+
+.dashboardCloneModal {
+  width: 450px;
 }
 
 dashboard-grid {
   display: block;
   margin: 0;
   padding: 5px;
+  z-index: @dashboardGridDepth;
 }
 
 .start-screen {
-  margin: 20px;
+  margin: 20px auto;
   background-color: @dashboard-bg;
-  padding: 20px;
+  max-width: 800px;
+  background: tint(@globalColorBlue, 90%);
+  padding: 40px;
+  border-radius: 4px;
 }
 
 .gridster {
@@ -34,27 +109,12 @@ dashboard-grid {
     width: 25px;
   }
 
-  .gs-w {
-
-    &:hover {
-
-      dashboard-panel {
-        .visualize-show-spy {
-          visibility: visible;
-        }
-      }
-
-    }
-    .panel--edit-mode {
-      border-color: @kibanaGray4;
-      .visualize-show-spy {
-        visibility: visible;
-      }
-    }
-  }
-
   i.remove {
     cursor: pointer;
+  }
+
+  .gs-w {
+    z-index: auto;
   }
 }
 
@@ -75,6 +135,11 @@ dashboard-grid {
   flex-direction: column;
 }
 
+/**
+ * 1. Fix Firefox bug where a value of overflow: hidden will prevent scrolling in a panel where the spy panel does
+ * not have enough room.
+ * 2. react-select used in input control vis needs `visible` overflow to avoid clipping selection list
+ */
 dashboard-panel {
   flex: 1;
   display: flex;
@@ -84,7 +149,8 @@ dashboard-panel {
   background: @dashboard-panel-bg;
   color: @dashboard-panel-color;
   padding: 0;
-  overflow: hidden;
+  overflow: visible; /* 1, 2 */
+
   position: relative;
 
   .panel {
@@ -134,6 +200,12 @@ dashboard-panel {
       visibility: hidden;
     }
 
+    &:hover {
+      .visualize-show-spy {
+        visibility: visible;
+      }
+    }
+
     .load-error {
       text-align: center;
       font-size: 1em;
@@ -153,5 +225,13 @@ dashboard-panel {
       flex: 1 1 100%;
       height: auto;
     }
+  }
+
+  /**
+   * 1. We want the doc-table-container to scroll only when embedded in a dashboard panel
+   */
+  .doc-table-container {
+    flex: 1 1 0; /* 1 */
+    overflow: auto; /* 1 */
   }
 }

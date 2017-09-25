@@ -1,4 +1,4 @@
-import sinon from 'auto-release-sinon';
+import sinon from 'sinon';
 import searchResponse from 'fixtures/search_response';
 import FixturesStubbedLogstashIndexPatternProvider from 'fixtures/stubbed_logstash_index_pattern';
 
@@ -35,10 +35,17 @@ export default function stubSearchSource(Private, $q, Promise) {
     getOnResultsCount: function () {
       return onResultsCount;
     },
-    onError: function () { return $q.defer().promise; },
     _flatten: function () {
       return Promise.resolve({ index: indexPattern, body: {} });
-    }
+    },
+    _requestStartHandlers: [],
+    onRequestStart(fn) {
+      this._requestStartHandlers.push(fn);
+    },
+    requestIsStarting(req) {
+      return Promise.map(this._requestStartHandlers, fn => fn(req));
+    },
+    requestIsStopped() {}
   };
 
 }

@@ -3,7 +3,6 @@ import { writeFile } from 'fs';
 
 import webpack from 'webpack';
 import Boom from 'boom';
-import DirectoryNameAsMain from '@elastic/webpack-directory-name-as-main';
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
 import CommonsChunkPlugin from 'webpack/lib/optimize/CommonsChunkPlugin';
 import DefinePlugin from 'webpack/lib/DefinePlugin';
@@ -11,13 +10,12 @@ import UglifyJsPlugin from 'webpack/lib/optimize/UglifyJsPlugin';
 import { defaults, transform } from 'lodash';
 
 import { fromRoot } from '../utils';
-import babelOptions from './babel/options';
 import pkg from '../../package.json';
 import { setLoaderQueryParam, makeLoaderString } from './loaders';
 
 const babelExclude = [/[\/\\](webpackShims|node_modules|bower_components)[\/\\]/];
 
-class BaseOptimizer {
+export default class BaseOptimizer {
   constructor(opts) {
     this.env = opts.env;
     this.urlBasePath = opts.urlBasePath;
@@ -109,9 +107,6 @@ class BaseOptimizer {
       recordsPath: resolve(this.env.workingDir, 'webpack.records'),
 
       plugins: [
-        new webpack.ResolverPlugin([
-          new DirectoryNameAsMain()
-        ]),
         new webpack.NoErrorsPlugin(),
         new ExtractTextPlugin('[name].style.css', {
           allChunks: true
@@ -134,10 +129,14 @@ class BaseOptimizer {
           { test: /\.(woff|woff2|ttf|eot|svg|ico)(\?|$)/, loader: 'file-loader' },
           { test: /[\/\\]src[\/\\](core_plugins|ui)[\/\\].+\.js$/, loader: loaderWithSourceMaps('rjs-repack-loader') },
           {
-            test: /\.jsx?$/,
+            test: /\.js$/,
             exclude: babelExclude.concat(this.env.noParse),
             loader: 'babel-loader',
-            query: babelOptions.webpack
+            query: {
+              presets: [
+                require.resolve('../babel-preset/webpack')
+              ]
+            }
           },
         ],
         postLoaders: this.env.postLoaders || [],
@@ -145,7 +144,7 @@ class BaseOptimizer {
       },
 
       resolve: {
-        extensions: ['.js', '.json', '.jsx', '.less', ''],
+        extensions: ['.js', '.json', ''],
         postfixes: [''],
         modulesDirectories: ['webpackShims', 'node_modules'],
         fallback: [fromRoot('webpackShims'), fromRoot('node_modules')],
@@ -228,5 +227,3 @@ class BaseOptimizer {
     );
   }
 }
-
-module.exports = BaseOptimizer;

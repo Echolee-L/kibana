@@ -1,6 +1,6 @@
 import expect from 'expect.js';
 import ngMock from 'ng_mock';
-import sinon from 'auto-release-sinon';
+import sinon from 'sinon';
 
 import { StateProvider } from 'ui/state_management/state';
 import { unhashUrl } from 'ui/state_management/state_hashing';
@@ -41,11 +41,6 @@ describe('unhashUrl', () => {
 
     it('if empty hash with query', () => {
       const url = 'https://localhost:5601/app/kibana?foo=bar#';
-      expect(unhashUrl(url, unhashableStates)).to.be(url);
-    });
-
-    it('if empty hash without query', () => {
-      const url = 'https://localhost:5601/app/kibana#';
       expect(unhashUrl(url, unhashableStates)).to.be(url);
     });
 

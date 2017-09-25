@@ -1,6 +1,6 @@
 import _, { keys } from 'lodash';
 
-import visualRegression from '../utilities/visual_regression';
+import { run } from '../utilities/visual_regression';
 
 module.exports = function (grunt) {
   grunt.registerTask(
@@ -8,15 +8,13 @@ module.exports = function (grunt) {
     'Compare screenshots and generate diff images.',
     function () {
       const done = this.async();
-      visualRegression.run(done);
+      run(done);
     }
   );
 
   grunt.registerTask('test:server', [
     'checkPlugins',
-    'esvm:test',
     'simplemocha:all',
-    'esvm_shutdown:test',
   ]);
 
   grunt.registerTask('test:browser', [
@@ -58,8 +56,7 @@ module.exports = function (grunt) {
     'checkPlugins',
     'esvm:ui',
     'run:testUIServer',
-    'clean:screenshots',
-    'functionalTestRunner',
+    'functional_test_runner:functional',
     'esvm_shutdown:ui',
     'stop:testUIServer'
   ]);
@@ -68,8 +65,7 @@ module.exports = function (grunt) {
     'checkPlugins',
     'esvm:ui',
     'run:testUIReleaseServer',
-    'clean:screenshots',
-    'functionalTestRunner',
+    'functional_test_runner:functional',
     'esvm_shutdown:ui',
     'stop:testUIReleaseServer'
   ]);
@@ -83,19 +79,19 @@ module.exports = function (grunt) {
   grunt.registerTask('test:api', [
     'esvm:ui',
     'run:apiTestServer',
-    'simplemocha:api',
+    'functional_test_runner:apiIntegration',
     'esvm_shutdown:ui',
     'stop:apiTestServer'
   ]);
 
   grunt.registerTask('test:api:server', [
     'esvm:ui',
-    'run:apiTestServer:keepalive'
+    'run:devApiTestServer:keepalive'
   ]);
 
-  grunt.registerTask('test:api:runner', [
-    'simplemocha:api'
-  ]);
+  grunt.registerTask('test:api:runner', () => {
+    grunt.fail.fatal('test:api:runner has moved, use: `node scripts/functional_test_runner --config test/api_integration/config.js`');
+  });
 
   grunt.registerTask('test', subTask => {
     if (subTask) grunt.fail.fatal(`invalid task "test:${subTask}"`);

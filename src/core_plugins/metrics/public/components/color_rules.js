@@ -1,9 +1,11 @@
-import React, { Component, PropTypes } from 'react';
+import PropTypes from 'prop-types';
+import React, { Component } from 'react';
 import _ from 'lodash';
 import AddDeleteButtons from './add_delete_buttons';
 import Select from 'react-select';
-import collectionActions from './lib/collection_actions';
+import * as collectionActions from './lib/collection_actions';
 import ColorPicker from './color_picker';
+import { htmlIdGenerator } from 'ui_framework/services';
 
 class ColorRules extends Component {
 
@@ -38,6 +40,7 @@ class ColorRules extends Component {
       const handleChange = collectionActions.handleChange.bind(null, this.props);
       handleChange(_.assign({}, model, part));
     };
+    const htmlId = htmlIdGenerator(model.id);
     let secondary;
     if (!this.props.hideSecondary) {
       secondary = (
@@ -46,7 +49,8 @@ class ColorRules extends Component {
           <ColorPicker
             onChange={handleColorChange}
             name={this.props.secondaryVarName}
-            value={model[this.props.secondaryVarName]}/>
+            value={model[this.props.secondaryVarName]}
+          />
         </div>
       );
     }
@@ -56,25 +60,33 @@ class ColorRules extends Component {
         <ColorPicker
           onChange={handleColorChange}
           name={this.props.primaryVarName}
-          value={model[this.props.primaryVarName]}/>
+          value={model[this.props.primaryVarName]}
+        />
         { secondary }
-        <div className="color_rules__label">if metric is</div>
+        <label className="color_rules__label" htmlFor={htmlId('ifMetricIs')}>
+          if metric is
+        </label>
         <div className="color_rules__item">
           <Select
+            inputProps={{ id: htmlId('ifMetricIs') }}
             onChange={this.handleChange(model, 'opperator')}
             value={model.opperator}
-            options={operatorOptions}/>
+            options={operatorOptions}
+          />
         </div>
         <input
+          aria-label="Value"
           className="color_rules__input"
           type="number"
           value={model.value}
-          onChange={this.handleChange(model, 'value', Number)}/>
+          onChange={this.handleChange(model, 'value', Number)}
+        />
         <div className="color_rules__control">
           <AddDeleteButtons
             onAdd={handleAdd}
             onDelete={handleDelete}
-            disableDelete={items.length < 2}/>
+            disableDelete={items.length < 2}
+          />
         </div>
       </div>
     );

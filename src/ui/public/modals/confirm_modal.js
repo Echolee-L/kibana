@@ -6,9 +6,14 @@ import { ModalOverlay } from './modal_overlay';
 
 const module = uiModules.get('kibana');
 
+import {
+  KUI_MODAL_CONFIRM_BUTTON as CONFIRM_BUTTON,
+  KUI_MODAL_CANCEL_BUTTON as CANCEL_BUTTON,
+} from 'ui_framework/components';
+
 export const ConfirmationButtonTypes = {
-  CONFIRM: 'Confirm',
-  CANCEL: 'Cancel'
+  CONFIRM: CONFIRM_BUTTON,
+  CANCEL: CANCEL_BUTTON
 };
 
 /**
@@ -48,6 +53,7 @@ module.factory('confirmModal', function ($rootScope, $compile) {
     const confirmScope = $rootScope.$new();
 
     confirmScope.message = message;
+    confirmScope.defaultFocusedButton = options.defaultFocusedButton;
     confirmScope.confirmButtonText = options.confirmButtonText;
     confirmScope.cancelButtonText = options.cancelButtonText;
     confirmScope.title = options.title;
@@ -67,21 +73,6 @@ module.factory('confirmModal', function ($rootScope, $compile) {
     function showModal(confirmScope) {
       const modalInstance = $compile(template)(confirmScope);
       modalPopover = new ModalOverlay(modalInstance);
-      angular.element(document.body).on('keydown', (event) => {
-        if (event.keyCode === 27) {
-          confirmScope.onCancel();
-        }
-      });
-
-      switch (options.defaultFocusedButton) {
-        case ConfirmationButtonTypes.CONFIRM:
-          modalInstance.find('[data-test-subj=confirmModalConfirmButton]').focus();
-          break;
-        case ConfirmationButtonTypes.CANCEL:
-          modalInstance.find('[data-test-subj=confirmModalCancelButton]').focus();
-          break;
-        default:
-      }
     }
 
     if (modalPopover) {

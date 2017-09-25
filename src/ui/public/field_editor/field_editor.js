@@ -6,14 +6,15 @@ import { RegistryFieldFormatsProvider } from 'ui/registry/field_formats';
 import { IndexPatternsFieldProvider } from 'ui/index_patterns/_field';
 import { uiModules } from 'ui/modules';
 import fieldEditorTemplate from 'ui/field_editor/field_editor.html';
-import { IndexPatternsCastMappingTypeProvider } from 'ui/index_patterns/_cast_mapping_type';
-import { scriptedFields as docLinks } from '../documentation_links/documentation_links';
+import { documentationLinks } from '../documentation_links/documentation_links';
 import './field_editor.less';
 import { GetEnabledScriptingLanguagesProvider, getSupportedScriptingLanguages } from '../scripting_languages';
+import { getKbnTypeNames } from '../../../utils';
 
 uiModules
 .get('kibana', ['colorpicker.module'])
-.directive('fieldEditor', function (Private, $sce, confirmModal) {
+.directive('fieldEditor', function (Private, $sce, confirmModal, config) {
+  const getConfig = (...args) => config.get(...args);
   const fieldFormats = Private(RegistryFieldFormatsProvider);
   const Field = Private(IndexPatternsFieldProvider);
   const getEnabledScriptingLanguages = Private(GetEnabledScriptingLanguagesProvider);
@@ -21,7 +22,7 @@ uiModules
   const fieldTypesByLang = {
     painless: ['number', 'string', 'date', 'boolean'],
     expression: ['number'],
-    default: _.keys(Private(IndexPatternsCastMappingTypeProvider).types.byType)
+    default: getKbnTypeNames()
   };
 
   return {
@@ -36,7 +37,7 @@ uiModules
       const self = this;
       const notify = new Notifier({ location: 'Field Editor' });
 
-      self.docLinks = docLinks;
+      self.docLinks = documentationLinks.scriptedFields;
       getScriptingLangs().then((langs) => {
         self.scriptingLangs = _.intersection(langs, ['expression', 'painless']);
         if (!_.includes(self.scriptingLangs, self.field.lang)) {
@@ -61,8 +62,12 @@ uiModules
         const fields = indexPattern.fields;
         const field = self.field.toActualField();
 
-        fields.remove({ name: field.name });
-        fields.push(field);
+        const index = fields.findIndex(f => f.name === field.name);
+        if (index > -1) {
+          fields.splice(index, 1, field);
+        } else {
+          fields.push(field);
+        }
 
         if (!self.selectedFormatId) {
           delete indexPattern.fieldFormatMap[field.name];
@@ -107,12 +112,14 @@ uiModules
         if (!changedFormat || !missingFormat) return;
 
         // reset to the defaults, but make sure it's an object
-        self.formatParams = _.assign({}, _.cloneDeep(getFieldFormatType().paramDefaults));
+        const FieldFormat = getFieldFormatType();
+        const paramDefaults = new FieldFormat({}, getConfig).getParamDefaults();
+        self.formatParams = _.assign({}, _.cloneDeep(paramDefaults));
       });
 
       $scope.$watch('editor.formatParams', function () {
         const FieldFormat = getFieldFormatType();
-        self.field.format = new FieldFormat(self.formatParams);
+        self.field.format = new FieldFormat(self.formatParams, getConfig);
       }, true);
 
       $scope.$watch('editor.field.type', function (newValue) {

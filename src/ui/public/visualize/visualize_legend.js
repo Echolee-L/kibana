@@ -6,7 +6,7 @@ import { uiModules } from 'ui/modules';
 
 
 uiModules.get('kibana')
-.directive('visualizeLegend', function (Private, getAppState) {
+.directive('visualizeLegend', function (Private, getAppState, $timeout) {
   const Data = Private(VislibLibDataProvider);
   const filterBarClickHandler = Private(FilterBarClickHandlerProvider);
 
@@ -18,18 +18,18 @@ uiModules.get('kibana')
       const clickHandler = filterBarClickHandler($state);
       $scope.open = $scope.uiState.get('vis.legendOpen', true);
 
-      $scope.$watch('renderbot.chartData', function (data) {
+      $scope.$watch('visData', function (data) {
         if (!data) return;
         $scope.data = data;
       });
 
-      $scope.$watch('renderbot.refreshLegend', () => {
+      $scope.$watch('vis.refreshLegend', () => {
         refresh();
       });
 
       $scope.highlight = function (event) {
         const el = event.currentTarget;
-        const handler = $scope.renderbot.vislibVis.handler;
+        const handler = $scope.vis.vislibVis.handler;
 
         //there is no guarantee that a Chart will set the highlight-function on its handler
         if (!handler || typeof handler.highlight !== 'function') {
@@ -40,7 +40,7 @@ uiModules.get('kibana')
 
       $scope.unhighlight = function (event) {
         const el = event.currentTarget;
-        const handler = $scope.renderbot.vislibVis.handler;
+        const handler = $scope.vis.vislibVis.handler;
         //there is no guarantee that a Chart will set the unhighlight-function on its handler
         if (!handler || typeof handler.unHighlight !== 'function') {
           return;
@@ -62,20 +62,20 @@ uiModules.get('kibana')
         const bwcAddLegend = $scope.vis.params.addLegend;
         const bwcLegendStateDefault = bwcAddLegend == null ? true : bwcAddLegend;
         $scope.open = !$scope.uiState.get('vis.legendOpen', bwcLegendStateDefault);
-        $scope.uiState.set('vis.legendOpen', $scope.open);
+        // open should be applied on template before we update uiState
+        $timeout(() => {
+          $scope.uiState.set('vis.legendOpen', $scope.open);
+        });
       };
 
       $scope.getToggleLegendClasses = function () {
         switch ($scope.vis.params.legendPosition) {
           case 'top':
             return $scope.open ? 'fa-chevron-circle-up' : 'fa-chevron-circle-down';
-            break;
           case 'bottom':
             return $scope.open ? 'fa-chevron-circle-down' : 'fa-chevron-circle-up';
-            break;
           case 'left':
             return $scope.open ? 'fa-chevron-circle-left' : 'fa-chevron-circle-right';
-            break;
           case 'right':
           default:
             return $scope.open ? 'fa-chevron-circle-right' : 'fa-chevron-circle-left';
@@ -102,9 +102,8 @@ uiModules.get('kibana')
       ];
 
       function refresh() {
-        if (!$scope.renderbot) return;
-        const vislibVis = $scope.renderbot.vislibVis;
-        if (!vislibVis.visConfig) {
+        const vislibVis = $scope.vis.vislibVis;
+        if (!vislibVis || !vislibVis.visConfig) {
           $scope.labels = [{ label: 'loading ...' }];
           return;
         }  // make sure vislib is defined at this point
@@ -113,7 +112,7 @@ uiModules.get('kibana')
           $scope.open = $scope.vis.params.addLegend;
         }
 
-        if (vislibVis.visConfigArgs.type === 'heatmap') {
+        if (['heatmap', 'gauge'].includes(vislibVis.visConfigArgs.type)) {
           const labels = vislibVis.getLegendLabels();
           if (labels) {
             $scope.labels = _.map(labels, label => {

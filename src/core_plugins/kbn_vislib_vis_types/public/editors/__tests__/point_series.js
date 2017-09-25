@@ -20,7 +20,7 @@ describe('point series editor', function () {
   function makeConfig() {
     return {
       type: 'line',
-      params: lineVisType.params.defaults,
+      params: lineVisType.visConfig.defaults,
       aggs: [
         { type: 'count', schema: 'metric', params: { field: 'bytes' } },
         { type: 'terms', schema: 'segment', params: { field: 'machine.os' } },
@@ -103,5 +103,16 @@ describe('point series editor', function () {
   it('should not allow to remove the last value axis', function () {
     $parentScope.removeValueAxis({ id: 'ValueAxis-1' });
     expect($parentScope.vis.params.valueAxes.length).to.be(1);
+  });
+
+  it('should set the value axis title if its not set', function () {
+    $parentScope.updateAxisTitle();
+    expect($parentScope.vis.params.valueAxes[0].title.text).to.equal('Count');
+  });
+
+  it('should not update the value axis title if custom title was set', function () {
+    $parentScope.vis.params.valueAxes[0].title.text = 'Custom Title';
+    $parentScope.updateAxisTitle();
+    expect($parentScope.vis.params.valueAxes[0].title.text).to.equal('Custom Title');
   });
 });

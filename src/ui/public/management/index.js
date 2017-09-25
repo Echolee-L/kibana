@@ -12,11 +12,15 @@ management.register('data', {
 
 management.register('elasticsearch', {
   display: 'Elasticsearch',
-  order: 10
+  order: 20
 });
 
 management.register('kibana', {
   display: 'Kibana',
-  order: 20,
+  order: 30,
 });
 
+management.register('logstash', {
+  display: 'Logstash',
+  order: 30,
+});

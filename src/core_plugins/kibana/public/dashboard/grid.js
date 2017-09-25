@@ -19,11 +19,6 @@ app.directive('dashboardGrid', function ($compile, Notifier) {
        */
       dashboardViewMode: '=',
       /**
-       * Used to create a child persisted state for the panel from parent state.
-       * @type {function} - Returns a {PersistedState} child uiState for this scope.
-       */
-      createChildUiState: '=',
-      /**
        * Trigger after a panel has been removed from the grid.
        */
       onPanelRemoved: '=',
@@ -32,16 +27,6 @@ app.directive('dashboardGrid', function ($compile, Notifier) {
        * @type {Array<PanelState>}
        */
       panels: '=',
-      /**
-       * Returns a click handler for a visualization.
-       * @type {function}
-       */
-      getVisClickHandler: '=',
-      /**
-       * Returns a brush event handler for a visualization.
-       * @type {function}
-       */
-      getVisBrushHandler: '=',
       /**
        * Call when changes should be propagated to the url and thus saved in state.
        * @type {function}
@@ -53,6 +38,10 @@ app.directive('dashboardGrid', function ($compile, Notifier) {
        * @type {function}
        */
       toggleExpand: '=',
+      /**
+       * @type {DashboardContainerApi}
+       */
+      containerApi: '=',
     },
     link: function ($scope, $el) {
       const notify = new Notifier();
@@ -135,11 +124,27 @@ app.directive('dashboardGrid', function ($compile, Notifier) {
 
         $scope.$watchCollection('panels', function (panels) {
           const currentPanels = gridster.$widgets.toArray().map(
-            el => PanelUtils.findPanelByPanelIndex(el.panelIndex, $scope.panels)
+            el => {
+              const panel = PanelUtils.findPanelByPanelIndex(el.panelIndex, $scope.panels);
+              if (panel) {
+                // A panel may have had its state updated, refresh gridster with the latest values.
+                const panelElement = panelElementMapping[panel.panelIndex];
+                PanelUtils.refreshElementSizeAndPosition(panel, panelElement);
+                return panel;
+              } else {
+                return { panelIndex: el.panelIndex };
+              }
+            }
           );
 
-          // panels that have been added
+          // Panels in the grid that are missing from the panels array. This can happen if the url is modified, and a
+          // panel is manually removed.
+          const removed = _.difference(currentPanels, panels);
+          // Panels that have been added.
           const added = _.difference(panels, currentPanels);
+
+          removed.forEach(panel => $scope.removePanel(panel.panelIndex));
+
           if (added.length) {
             // See issue https://github.com/elastic/kibana/issues/2138 and the
             // subsequent fix for why we need to sort here. Short story is that
@@ -157,9 +162,10 @@ app.directive('dashboardGrid', function ($compile, Notifier) {
             added.forEach(addPanel);
           }
 
-          if (added.length) {
+          if (added.length || removed.length) {
             $scope.saveState();
           }
+          layout();
         });
 
         $scope.$on('$destroy', function () {
@@ -179,6 +185,7 @@ app.directive('dashboardGrid', function ($compile, Notifier) {
         $window.on('resize', safeLayout);
         $scope.$on('ready:vis', safeLayout);
         $scope.$on('globalNav:update', safeLayout);
+        $scope.$on('reLayout', safeLayout);
       }
 
       // tell gridster to add the panel, and create additional meatadata like $scope
@@ -192,11 +199,9 @@ app.directive('dashboardGrid', function ($compile, Notifier) {
                   is-full-screen-mode="isFullScreenMode"
                   is-expanded="false"
                   dashboard-view-mode="dashboardViewMode"
-                  get-vis-click-handler="getVisClickHandler"
-                  get-vis-brush-handler="getVisBrushHandler"
-                  save-state="saveState"
+                  container-api="containerApi"
                   toggle-expand="toggleExpand(${panel.panelIndex})"
-                  create-child-ui-state="createChildUiState">
+                 >
             </li>`;
         const panelElement = $compile(panelHtml)($scope);
         panelElementMapping[panel.panelIndex] = panelElement;

@@ -59,4 +59,3 @@ if (window.addEventListener) {
     notifier.log(`Detected an unhandled Promise rejection.\n${e.reason}`);
   });
 }
-

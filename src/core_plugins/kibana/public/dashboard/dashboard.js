@@ -6,6 +6,7 @@ import chrome from 'ui/chrome';
 
 import 'plugins/kibana/dashboard/grid';
 import 'plugins/kibana/dashboard/panel/panel';
+import 'ui/query_bar';
 
 import { SavedObjectNotFound } from 'ui/errors';
 import { getDashboardTitle, getUnsavedChangesWarningMessage } from './dashboard_strings';
@@ -18,11 +19,15 @@ import { DocTitleProvider } from 'ui/doc_title';
 import { getTopNavConfig } from './top_nav/get_top_nav_config';
 import { DashboardConstants, createDashboardEditUrl } from './dashboard_constants';
 import { VisualizeConstants } from 'plugins/kibana/visualize/visualize_constants';
-import { UtilsBrushEventProvider } from 'ui/utils/brush_event';
-import { FilterBarClickHandlerProvider } from 'ui/filter_bar/filter_bar_click_handler';
 import { DashboardState } from './dashboard_state';
 import { notify } from 'ui/notify';
 import { documentationLinks } from 'ui/documentation_links/documentation_links';
+import { showCloneModal } from './top_nav/show_clone_modal';
+import { migrateLegacyQuery } from 'ui/utils/migrateLegacyQuery';
+import { keyCodes } from 'ui_framework/services';
+import { DashboardContainerAPI } from './dashboard_container_api';
+import * as filterActions from 'ui/doc_table/actions/filter';
+import { FilterManagerProvider } from 'ui/filter_manager';
 
 const app = uiModules.get('app/dashboard', [
   'elasticsearch',
@@ -30,7 +35,7 @@ const app = uiModules.get('app/dashboard', [
   'kibana/courier',
   'kibana/config',
   'kibana/notify',
-  'kibana/typeahead'
+  'kibana/typeahead',
 ]);
 
 uiRoutes
@@ -70,14 +75,22 @@ uiRoutes
     }
   });
 
-app.directive('dashboardApp', function (Notifier, courier, AppState, timefilter, quickRanges, kbnUrl, confirmModal, Private) {
-  const brushEvent = Private(UtilsBrushEventProvider);
-  const filterBarClickHandler = Private(FilterBarClickHandlerProvider);
+app.directive('dashboardApp', function ($injector) {
+  const Notifier = $injector.get('Notifier');
+  const courier = $injector.get('courier');
+  const AppState = $injector.get('AppState');
+  const timefilter = $injector.get('timefilter');
+  const quickRanges = $injector.get('quickRanges');
+  const kbnUrl = $injector.get('kbnUrl');
+  const confirmModal = $injector.get('confirmModal');
+  const config = $injector.get('config');
+  const Private = $injector.get('Private');
 
   return {
     restrict: 'E',
     controllerAs: 'dashboardApp',
-    controller: function ($scope, $rootScope, $route, $routeParams, $location, Private, getAppState) {
+    controller: function ($scope, $rootScope, $route, $routeParams, $location, getAppState, $compile, dashboardConfig) {
+      const filterManager = Private(FilterManagerProvider);
       const filterBar = Private(FilterBarQueryFilterProvider);
       const docTitle = Private(DocTitleProvider);
       const notify = new Notifier({ location: 'Dashboard' });
@@ -88,7 +101,15 @@ app.directive('dashboardApp', function (Notifier, courier, AppState, timefilter,
         docTitle.change(dash.title);
       }
 
-      const dashboardState = new DashboardState(dash, AppState);
+      const dashboardState = new DashboardState(dash, AppState, dashboardConfig.getHideWriteControls());
+      $scope.appState = dashboardState.getAppState();
+      $scope.containerApi = new DashboardContainerAPI(
+        dashboardState,
+        (field, value, operator, index) => {
+          filterActions.addFilter(field, value, operator, index, dashboardState.getAppState(), filterManager);
+          dashboardState.saveState();
+        }
+      );
 
       // The 'previouslyStored' check is so we only update the time filter on dashboard open, not during
       // normal cross app navigation.
@@ -96,15 +117,34 @@ app.directive('dashboardApp', function (Notifier, courier, AppState, timefilter,
         dashboardState.syncTimefilterWithDashboard(timefilter, quickRanges);
       }
 
+      const updateState = () => {
+        // Following the "best practice" of always have a '.' in your ng-models –
+        // https://github.com/angular/angular.js/wiki/Understanding-Scopes
+        $scope.model = {
+          query: dashboardState.getQuery(),
+          darkTheme: dashboardState.getDarkTheme(),
+          timeRestore: dashboardState.getTimeRestore(),
+          title: dashboardState.getTitle(),
+          description: dashboardState.getDescription(),
+        };
+        $scope.panels = dashboardState.getPanels();
+        $scope.fullScreenMode = dashboardState.getFullScreenMode();
+        $scope.indexPatterns = dashboardState.getPanelIndexPatterns();
+      };
+
       // Part of the exposed plugin API - do not remove without careful consideration.
       this.appStatus = {
         dirty: !dash.id
       };
       dashboardState.stateMonitor.onChange(status => {
         this.appStatus.dirty = status.dirty || !dash.id;
+        updateState();
       });
 
-      dashboardState.applyFilters(dashboardState.getQuery(), filterBar.getFilters());
+      dashboardState.applyFilters(
+        dashboardState.getQuery() || { query: '', language: config.get('search:queryLanguage') },
+        filterBar.getFilters()
+      );
       let pendingVisCount = _.size(dashboardState.getPanels());
 
       timefilter.enabled = true;
@@ -112,17 +152,8 @@ app.directive('dashboardApp', function (Notifier, courier, AppState, timefilter,
       dash.searchSource.version(true);
       courier.setRootSearchSource(dash.searchSource);
 
-      // Following the "best practice" of always have a '.' in your ng-models –
-      // https://github.com/angular/angular.js/wiki/Understanding-Scopes
-      $scope.model = {
-        query: dashboardState.getQuery(),
-        darkTheme: dashboardState.getDarkTheme(),
-        timeRestore: dashboardState.getTimeRestore(),
-        title: dashboardState.getTitle(),
-        description: dashboardState.getDescription(),
-      };
+      updateState();
 
-      $scope.panels = dashboardState.getPanels();
       $scope.refresh = (...args) => {
         $rootScope.$broadcast('fetch');
         courier.fetch(...args);
@@ -132,8 +163,6 @@ app.directive('dashboardApp', function (Notifier, courier, AppState, timefilter,
       $scope.dashboardViewMode = dashboardState.getViewMode();
 
       $scope.landingPageUrl = () => `#${DashboardConstants.LANDING_PAGE_PATH}`;
-      $scope.getBrushEvent = () => brushEvent(dashboardState.getAppState());
-      $scope.getFilterBarClickHandler = () => filterBarClickHandler(dashboardState.getAppState());
       $scope.hasExpandedPanel = () => $scope.expandedPanel !== null;
       $scope.getDashTitle = () => getDashboardTitle(
         dashboardState.getTitle(),
@@ -141,8 +170,16 @@ app.directive('dashboardApp', function (Notifier, courier, AppState, timefilter,
         dashboardState.getIsDirty(timefilter));
       $scope.newDashboard = () => { kbnUrl.change(DashboardConstants.CREATE_NEW_DASHBOARD_URL, {}); };
       $scope.saveState = () => dashboardState.saveState();
-      $scope.getShouldShowEditHelp = () => !dashboardState.getPanels().length && dashboardState.getIsEditMode();
-      $scope.getShouldShowViewHelp = () => !dashboardState.getPanels().length && dashboardState.getIsViewMode();
+      $scope.getShouldShowEditHelp = () => (
+        !dashboardState.getPanels().length &&
+        dashboardState.getIsEditMode() &&
+        !dashboardConfig.getHideWriteControls()
+      );
+      $scope.getShouldShowViewHelp = () => (
+        !dashboardState.getPanels().length &&
+        dashboardState.getIsViewMode() &&
+        !dashboardConfig.getHideWriteControls()
+      );
 
       $scope.toggleExpandPanel = (panelIndex) => {
         if ($scope.expandedPanel && $scope.expandedPanel.panelIndex === panelIndex) {
@@ -153,7 +190,13 @@ app.directive('dashboardApp', function (Notifier, courier, AppState, timefilter,
         }
       };
 
-      $scope.filterResults = function () {
+      $scope.updateQueryAndFetch = function (query) {
+        // reset state if language changes
+        if ($scope.model.query.language && $scope.model.query.language !== query.language) {
+          filterBar.removeAll();
+          dashboardState.getAppState().$newFilters = [];
+        }
+        $scope.model.query = migrateLegacyQuery(query);
         dashboardState.applyFilters($scope.model.query, filterBar.getFilters());
         $scope.refresh();
       };
@@ -173,19 +216,6 @@ app.directive('dashboardApp', function (Notifier, courier, AppState, timefilter,
         notify.info(`Search successfully added to your dashboard`);
       };
 
-      /**
-       * Creates a child ui state for the panel. It's passed the ui state to use, but needs to
-       * be generated from the parent (why, I don't know yet).
-       * @param path {String} - the unique path for this ui state.
-       * @param uiState {Object} - the uiState for the child.
-       * @returns {Object}
-       */
-      $scope.createChildUiState = function createChildUiState(path, uiState) {
-        return dashboardState.uiState.createChild(path, uiState, true);
-      };
-
-      $scope.onPanelRemoved = (panelIndex) => dashboardState.removePanel(panelIndex);
-
       $scope.$watch('model.darkTheme', () => {
         dashboardState.setDarkTheme($scope.model.darkTheme);
         updateTheme();
@@ -193,11 +223,24 @@ app.directive('dashboardApp', function (Notifier, courier, AppState, timefilter,
       $scope.$watch('model.description', () => dashboardState.setDescription($scope.model.description));
       $scope.$watch('model.title', () => dashboardState.setTitle($scope.model.title));
       $scope.$watch('model.timeRestore', () => dashboardState.setTimeRestore($scope.model.timeRestore));
+      $scope.indexPatterns = [];
+
+      $scope.registerPanelIndexPattern = (panelIndex, pattern) => {
+        dashboardState.registerPanelIndexPatternMap(panelIndex, pattern);
+        $scope.indexPatterns = dashboardState.getPanelIndexPatterns();
+      };
+
+      $scope.onPanelRemoved = (panelIndex) => {
+        dashboardState.removePanel(panelIndex);
+        $scope.indexPatterns = dashboardState.getPanelIndexPatterns();
+      };
+
+      $scope.$watch('model.query', $scope.updateQueryAndFetch);
 
       $scope.$listen(timefilter, 'fetch', $scope.refresh);
 
       function updateViewMode(newMode) {
-        $scope.topNavMenu = getTopNavConfig(newMode, navActions); // eslint-disable-line no-use-before-define
+        $scope.topNavMenu = getTopNavConfig(newMode, navActions, dashboardConfig.getHideWriteControls()); // eslint-disable-line no-use-before-define
         dashboardState.switchViewMode(newMode);
         $scope.dashboardViewMode = newMode;
       }
@@ -238,12 +281,6 @@ app.directive('dashboardApp', function (Notifier, courier, AppState, timefilter,
         );
       };
 
-      const navActions = {};
-      navActions[TopNavIds.EXIT_EDIT_MODE] = () => onChangeViewMode(DashboardViewMode.VIEW);
-      navActions[TopNavIds.ENTER_EDIT_MODE] = () => onChangeViewMode(DashboardViewMode.EDIT);
-
-      updateViewMode(dashboardState.getViewMode());
-
       $scope.save = function () {
         return dashboardState.saveDashboard(angular.toJson, timefilter).then(function (id) {
           $scope.kbnTopNav.close('save');
@@ -256,8 +293,76 @@ app.directive('dashboardApp', function (Notifier, courier, AppState, timefilter,
               updateViewMode(DashboardViewMode.VIEW);
             }
           }
-        }).catch(notify.fatal);
+          return id;
+        }).catch(notify.error);
       };
+
+      $scope.showFilterBar = () => filterBar.getFilters().length > 0 || !$scope.fullScreenMode;
+      let onRouteChange;
+      const setFullScreenMode = (fullScreenMode) => {
+        $scope.fullScreenMode = fullScreenMode;
+        dashboardState.setFullScreenMode(fullScreenMode);
+        chrome.setVisible(!fullScreenMode);
+        $scope.$broadcast('reLayout');
+
+        // Make sure that if we exit the dashboard app, the chrome becomes visible again
+        // (e.g. if the user clicks the back button).
+        if (fullScreenMode) {
+          onRouteChange = $scope.$on('$routeChangeStart', () => {
+            chrome.setVisible(true);
+            onRouteChange();
+          });
+        } else if (onRouteChange) {
+          onRouteChange();
+        }
+      };
+
+      $scope.$watch('fullScreenMode', () => setFullScreenMode(dashboardState.getFullScreenMode()));
+
+      $scope.exitFullScreenMode = () => setFullScreenMode(false);
+
+      document.addEventListener('keydown', (e) => {
+        if (e.keyCode === keyCodes.ESCAPE) {
+          setFullScreenMode(false);
+        }
+      }, false);
+
+      $scope.showAddPanel = () => {
+        if ($scope.fullScreenMode) {
+          $scope.exitFullScreenMode();
+        }
+        $scope.kbnTopNav.open('add');
+      };
+      $scope.enterEditMode = () => {
+        if ($scope.fullScreenMode) {
+          $scope.exitFullScreenMode();
+        }
+        $scope.kbnTopNav.click('edit');
+      };
+      const navActions = {};
+      navActions[TopNavIds.FULL_SCREEN] = () => setFullScreenMode(true);
+      navActions[TopNavIds.EXIT_EDIT_MODE] = () => onChangeViewMode(DashboardViewMode.VIEW);
+      navActions[TopNavIds.ENTER_EDIT_MODE] = () => onChangeViewMode(DashboardViewMode.EDIT);
+      navActions[TopNavIds.CLONE] = () => {
+        const currentTitle = $scope.model.title;
+        const onClone = (newTitle) => {
+          dashboardState.savedDashboard.copyOnSave = true;
+          dashboardState.setTitle(newTitle);
+          return $scope.save().then(id => {
+            // If the save wasn't successful, put the original title back.
+            if (!id) {
+              $scope.model.title = currentTitle;
+              // There is a watch on $scope.model.title that *should* call this automatically but
+              // angular is failing to trigger it, so do so manually here.
+              dashboardState.setTitle(currentTitle);
+            }
+            return id;
+          });
+        };
+
+        showCloneModal(onClone, currentTitle, $rootScope, $compile);
+      };
+      updateViewMode(dashboardState.getViewMode());
 
       // update root source when filters update
       $scope.$listen(filterBar, 'update', function () {

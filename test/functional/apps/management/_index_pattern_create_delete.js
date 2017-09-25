@@ -5,6 +5,7 @@ export default function ({ getService, getPageObjects }) {
   const remote = getService('remote');
   const log = getService('log');
   const retry = getService('retry');
+  const screenshots = getService('screenshots');
   const PageObjects = getPageObjects(['settings', 'common']);
 
   describe('creating and deleting default index', function describeIndexTests() {
@@ -20,23 +21,25 @@ export default function ({ getService, getPageObjects }) {
     });
 
     describe('index pattern creation', function indexPatternCreation() {
+      let indexPatternId;
+
       before(function () {
-        return PageObjects.settings.createIndexPattern();
+        return PageObjects.settings.createIndexPattern()
+          .then(id => indexPatternId = id);
       });
 
-      it('should have index pattern in page header', function () {
-        return PageObjects.settings.getIndexPageHeading().getVisibleText()
-        .then(function (patternName) {
-          PageObjects.common.saveScreenshot('Settings-indices-new-index-pattern');
-          expect(patternName).to.be('logstash-*');
-        });
+      it('should have index pattern in page header', async function () {
+        const indexPageHeading = await PageObjects.settings.getIndexPageHeading();
+        const patternName = await indexPageHeading.getVisibleText();
+        screenshots.take('Settings-indices-new-index-pattern');
+        expect(patternName).to.be('logstash-*');
       });
 
       it('should have index pattern in url', function url() {
         return retry.try(function tryingForTime() {
           return remote.getCurrentUrl()
           .then(function (currentUrl) {
-            expect(currentUrl).to.contain('logstash-*');
+            expect(currentUrl).to.contain(indexPatternId);
           });
         });
       });
@@ -51,7 +54,6 @@ export default function ({ getService, getPageObjects }) {
             'format',
             'searchable',
             'aggregatable',
-            'analyzed',
             'excluded',
             'controls'
           ];
@@ -75,14 +77,14 @@ export default function ({ getService, getPageObjects }) {
         const expectedAlertText = 'Are you sure you want to remove this index pattern?';
         return PageObjects.settings.removeIndexPattern()
         .then(function (alertText) {
-          PageObjects.common.saveScreenshot('Settings-indices-confirm-remove-index-pattern');
+          screenshots.take('Settings-indices-confirm-remove-index-pattern');
           expect(alertText).to.be(expectedAlertText);
         });
       });
 
       it('should return to index pattern creation page', function returnToPage() {
         return retry.try(function tryingForTime() {
-          return PageObjects.settings.getCreateButton();
+          return PageObjects.settings.getCreateIndexPatternGoToStep2Button();
         });
       });
 

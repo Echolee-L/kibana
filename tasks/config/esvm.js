@@ -1,23 +1,23 @@
-import serverConfig from '../../test/server_config';
+import { esTestConfig } from '../../src/test_utils/es';
+
 module.exports = function (grunt) {
-  const resolve = require('path').resolve;
-  const directory = resolve(__dirname, '../../esvm');
-  const dataDir = resolve(directory, 'data_dir');
+  const branch = esTestConfig.getBranch();
+  const dataDir = esTestConfig.getDirectoryForEsvm('data_dir');
 
   return {
     options: {
-      branch: 'master',
+      branch,
       fresh: !grunt.option('esvm-no-fresh'),
       config: {
         http: {
           port: 9200
-        }
+        },
       }
     },
 
     dev: {
       options: {
-        directory: resolve(directory, 'dev'),
+        directory: esTestConfig.getDirectoryForEsvm('dev'),
         config: {
           path: {
             data: dataDir
@@ -31,7 +31,7 @@ module.exports = function (grunt) {
 
     tribe: {
       options: {
-        directory: resolve(directory, 'tribe'),
+        directory: esTestConfig.getDirectoryForEsvm('tribe'),
         config: {
           path: {
             data: dataDir
@@ -82,37 +82,13 @@ module.exports = function (grunt) {
       },
     },
 
-    test: {
-      options: {
-        directory: resolve(directory, 'test'),
-        purge: true,
-        config: {
-          http: {
-            port: serverConfig.servers.elasticsearch.port
-          },
-          cluster: {
-            name: 'esvm-test'
-          },
-          discovery: {
-            zen: {
-              ping: {
-                unicast: {
-                  hosts: [ `localhost:${serverConfig.servers.elasticsearch.port}` ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-
     ui: {
       options: {
-        directory: resolve(directory, 'test'),
+        directory: esTestConfig.getDirectoryForEsvm('test'),
         purge: true,
         config: {
           http: {
-            port: serverConfig.servers.elasticsearch.port
+            port: esTestConfig.getPort()
           },
           cluster: {
             name: 'esvm-ui'
@@ -121,7 +97,7 @@ module.exports = function (grunt) {
             zen: {
               ping: {
                 unicast: {
-                  hosts: [ `localhost:${serverConfig.servers.elasticsearch.port}` ]
+                  hosts: [ `localhost:${esTestConfig.getPort()}` ]
                 }
               }
             }
@@ -130,43 +106,5 @@ module.exports = function (grunt) {
       }
     },
 
-    withPlugins: {
-      options: {
-        version: '2.1.0',
-        directory: resolve(directory, 'withPlugins'),
-        plugins: [
-          'license',
-          'shield',
-          'marvel-agent',
-          'watcher'
-        ],
-        shield: {
-          users: [
-            {
-              username: 'kibana',
-              password: 'notsecure',
-              roles: ['kibana4_server']
-            },
-            {
-              username: 'user',
-              password: 'notsecure',
-              roles: ['kibana4', 'marvel']
-            },
-            {
-              username: 'admin',
-              password: 'notsecure',
-              roles: ['admin']
-            }
-          ]
-        },
-        config: {
-          marvel: {
-            agent: {
-              interval: '60s'
-            }
-          }
-        }
-      }
-    }
   };
 };

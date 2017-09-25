@@ -4,7 +4,7 @@ import {
   KuiConfirmModal,
   KuiModalOverlay,
   KuiButton
-} from '../../../../components/index';
+} from '../../../../components';
 
 export class ConfirmModalExample extends React.Component {
   constructor(props) {
@@ -27,7 +27,7 @@ export class ConfirmModalExample extends React.Component {
   render() {
     return (
       <div>
-        <KuiButton type="primary" onClick={this.showModal}>
+        <KuiButton buttonType="primary" onClick={this.showModal}>
           Show Modal
         </KuiButton>
         {

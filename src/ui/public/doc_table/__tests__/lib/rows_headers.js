@@ -1,6 +1,6 @@
 import angular from 'angular';
 import _ from 'lodash';
-import sinon from 'auto-release-sinon';
+import sinon from 'sinon';
 import expect from 'expect.js';
 import ngMock from 'ng_mock';
 import getFakeRow from 'fixtures/fake_row';
@@ -50,42 +50,39 @@ describe('Doc Table', function () {
   //
   const columnTests = function (elemType, parentElem) {
 
-    it('should create a time column if the timefield is defined', function (done) {
+    it('should create a time column if the timefield is defined', function () {
       const childElems = parentElem.find(elemType);
-      expect(childElems.length).to.be(2);
-      done();
+      expect(childElems.length).to.be(1);
     });
 
-    it('should be able to add and remove columns', function (done) {
+    it('should be able to add and remove columns', function () {
       let childElems;
       // Should include a column for toggling and the time column by default
       $parentScope.columns = ['bytes'];
       parentElem.scope().$digest();
       childElems = parentElem.find(elemType);
-      expect(childElems.length).to.be(3);
-      expect($(childElems[2]).text()).to.contain('bytes');
+      expect(childElems.length).to.be(2);
+      expect($(childElems[1]).text()).to.contain('bytes');
 
       $parentScope.columns = ['bytes', 'request_body'];
       parentElem.scope().$digest();
       childElems = parentElem.find(elemType);
-      expect(childElems.length).to.be(4);
-      expect($(childElems[3]).text()).to.contain('request_body');
+      expect(childElems.length).to.be(3);
+      expect($(childElems[2]).text()).to.contain('request_body');
 
       $parentScope.columns = ['request_body'];
       parentElem.scope().$digest();
       childElems = parentElem.find(elemType);
-      expect(childElems.length).to.be(3);
-      expect($(childElems[2]).text()).to.contain('request_body');
-      done();
+      expect(childElems.length).to.be(2);
+      expect($(childElems[1]).text()).to.contain('request_body');
     });
 
-    it('should create only the toggle column if there is no timeField', function (done) {
+    it('should create only the toggle column if there is no timeField', function () {
       delete parentElem.scope().indexPattern.timeFieldName;
       parentElem.scope().$digest();
 
       const childElems = parentElem.find(elemType);
-      expect(childElems.length).to.be(1);
-      done();
+      expect(childElems.length).to.be(0);
     });
 
   };
@@ -120,7 +117,23 @@ describe('Doc Table', function () {
     });
 
     describe('adding and removing columns', function () {
-      columnTests('th', $elem);
+      columnTests('[data-test-subj~="docTableHeaderField"]', $elem);
+    });
+
+    describe('sorting button', function () {
+
+      beforeEach(function () {
+        $parentScope.columns = ['bytes', '_source'];
+        $elem.scope().$digest();
+      });
+
+      it('should show for sortable columns', function () {
+        expect($elem.find(`[data-test-subj="docTableHeaderFieldSort_bytes"]`).length).to.be(1);
+      });
+
+      it('should not be shown for unsortable columns', function () {
+        expect($elem.find(`[data-test-subj="docTableHeaderFieldSort__source"]`).length).to.be(0);
+      });
     });
 
     describe('cycleSortOrder function', function () {
@@ -255,7 +268,7 @@ describe('Doc Table', function () {
     });
 
     describe('adding and removing columns', function () {
-      columnTests('td', $elem);
+      columnTests('[data-test-subj~="docTableField"]', $elem);
     });
 
     describe('details row', function () {

@@ -34,7 +34,7 @@ export default class LoadingButton extends Component {
     return (
       <div>
         <KuiButton
-          type="basic"
+          buttonType="basic"
           onClick={this.onClick}
           isLoading={this.state.isLoading}
           disabled={this.state.isLoading}
@@ -43,9 +43,10 @@ export default class LoadingButton extends Component {
         </KuiButton>
 
         <br />
+        <br />
 
         <KuiButton
-          type="primary"
+          buttonType="primary"
           onClick={this.onClick}
           icon={<KuiButtonIcon type="create" />}
           isLoading={this.state.isLoading}
